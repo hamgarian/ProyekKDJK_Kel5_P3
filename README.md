@@ -1123,3 +1123,41 @@ menyimpang dari kenyataan tanpa terdeteksi.
 
 ---
 
+## Pengujian
+
+Matriks uji terima. Kolom **Hasil** hanya diisi untuk pemeriksaan yang benar
+benar dijalankan; sisanya dibiarkan apa adanya daripada ditebak.
+
+| # | Pemeriksaan | Perintah / cara | Hasil yang diharapkan | Hasil |
+|---|---|---|---|---|
+| 1 | Arsitektur host | `uname -m` | `aarch64` | ✅ `aarch64` |
+| 2 | Arsitektur image | `./scripts/validate.sh` | tag menyediakan `linux/arm64` | ✅ lulus |
+| 3 | Sintaks compose | `docker compose config` | ter-parse tanpa error | ✅ lulus |
+| 4 | Resolusi DNS | `dig +short gitlab.ilhem.eu.org` | mengembalikan IP server | ✅ resolve, HTTPS tersambung |
+| 5 | Pull image | `docker compose pull` | layer arm64 terunduh tanpa peringatan platform | ✅ image arm64 berjalan di host |
+| 6 | Boot container | log deploy | boot selesai tanpa dibunuh health check | ✅ container berjalan |
+| 7 | Status service | `gitlab-ctl status` | seluruh service `run:` | ✅ 10 service `run:` |
+| 8 | Sertifikat TLS | `openssl s_client -connect ...:443` | TLS tersambung tanpa peringatan | ✅ valid |
+| 9 | Halaman login | `curl -sSI .../users/sign_in` | `HTTP 200`, form login tampil | ✅ `HTTP 200` + form login |
+| 10 | Health check Compose | `docker compose ps` | status `healthy` | ⬜ belum diuji |
+| 11 | Readiness | `curl -sSI https://gitlab.ilhem.eu.org/-/readiness` | `HTTP/2 200` | ⬜ belum diuji |
+| 12 | Redirect HTTP ke HTTPS | `curl -sSI http://gitlab.ilhem.eu.org` | `301` ke `https://` | ⬜ belum diuji |
+| 13 | Login administratif | login root di peramban | masuk ke dashboard | ⬜ belum diuji |
+| 14 | Integritas aplikasi | `gitlab-rake gitlab:check SANITIZE=true` | tanpa kegagalan | ⬜ belum diuji |
+| 15 | Clone via HTTPS | `git clone https://gitlab.ilhem.eu.org/...` | berhasil | ⬜ belum diuji |
+| 16 | Clone via SSH | `ssh -T -p 2222 git@gitlab.ilhem.eu.org` | `Welcome to GitLab, @user!` | ⬜ belum diuji |
+| 17 | Push repositori | push dari klien | diterima tanpa ditolak proxy | ⬜ belum diuji |
+| 18 | Pipeline CI | jalankan `.gitlab-ci.yml` | pipeline berstatus `passed` | ⬜ belum diuji |
+| 19 | Pemakaian memori | `docker stats --no-stream gitlab` | sesuai target setelah tuning hemat memori | ⬜ belum diuji |
+| 20 | Persistensi | redeploy, lalu periksa data | data, user, dan repo tetap ada | ⬜ belum diuji |
+| 21 | Siklus backup | `gitlab-backup create` | `Creating backup archive: ... [DONE]` | ⬜ belum diuji |
+| 22 | Siklus restore | `gitlab-backup restore BACKUP=<id>` | data kembali utuh, `gitlab:check` lulus | ⬜ belum diuji |
+
+Baris 1 sampai 3 diulang otomatis oleh `scripts/validate.sh` tanpa menyentuh
+server. Baris 4 sampai 9 adalah pemeriksaan runtime yang sudah dilakukan pada
+instance aktif. Baris 10 ke bawah menuntut sesi login, klien Git, dan latihan
+restore; semuanya masih terbuka dan dicatat di
+[docs/verifikasi.md](docs/verifikasi.md).
+
+---
+
