@@ -12,3 +12,36 @@
 #   - password root awal berasal dari variabel magic SERVICE_PASSWORD_GITLABROOT
 #     yang dibangkitkan Coolify, jadi tidak ada rahasia di dalam berkas ini.
 
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:19.5.1-ce.0
+    restart: unless-stopped
+    hostname: gitlab.ilhem.eu.org
+    shm_size: 256m
+    mem_limit: 4g
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'https://gitlab.ilhem.eu.org'
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+        letsencrypt['enable'] = false
+        puma['worker_processes'] = 0
+        sidekiq['concurrency'] = 5
+        prometheus_monitoring['enable'] = false
+        gitlab_rails['initial_root_password'] = ENV['SERVICE_PASSWORD_GITLABROOT']
+        gitlab_rails['gitlab_signup_enabled'] = false
+        gitlab_rails['gitlab_shell_ssh_port'] = 2222
+      SERVICE_PASSWORD_GITLABROOT: ${SERVICE_PASSWORD_GITLABROOT}
+    ports:
+      - '2222:22'
+    volumes:
+      - gitlab-config:/etc/gitlab
+      - gitlab-logs:/var/log/gitlab
+      - gitlab-data:/var/opt/gitlab
+    healthcheck:
+      test: ['CMD', '/opt/gitlab/bin/gitlab-healthcheck', '--fail', '--max-time', '10']
+      interval: 60s
+      timeout: 30s
+      retries: 10
+      start_period: 15m
+
