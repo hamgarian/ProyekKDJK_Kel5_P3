@@ -1027,3 +1027,48 @@ merupakan langkah berikutnya yang belum tercatat hasilnya di laporan ini.
 | Wiki | tab `Plan → Wiki` | halaman dokumentasi internal |
 | Snippet | `/-/snippets` | potongan kode yang dibagikan |
 
+### Konten Instance (bukan instance kosong)
+
+Templat laporan meminta aplikasi diisi data nyata/dummy, tidak dibiarkan
+kosong. Susunan isi yang dipakai:
+
+**1. Grup `kdjk-p3-kelompok5`** berisi 4 anggota dengan peran:
+
+| Anggota | NIM | Peran di GitLab |
+|---|---|---|
+| Rafid Harsyah Syauqirahman | M0403241083 | Maintainer |
+| Melandri Rasya Arindhi | M0403241084 | Developer |
+| Kevin Daniel Abimanyu Siagian | M0403241086 | Developer |
+| Ilham Edgar Maulana Goesasi | M0403241087 | Owner |
+
+**2. Projek `laporan-kdjk`** - berisi dokumentasi ini sendiri, mendemokan
+siklus kerja nyata: branch, commit, merge request, review, merge.
+
+**3. Projek `demo-cicd`** - projek kecil dengan pipeline nyata:
+
+```yaml
+# .gitlab-ci.yml
+stages:
+  - lint
+  - test
+
+shellcheck:
+  stage: lint
+  image: koalaman/shellcheck-alpine:stable
+  script:
+    - shellcheck scripts/*.sh
+
+validate-compose:
+  stage: test
+  image: docker/compose-bin:latest
+  script:
+    - docker compose --env-file .env.example config --quiet
+```
+
+**4. Minimal 5 issue nyata** yang mencerminkan pekerjaan sebenarnya, dengan
+label `dokumentasi`, `instalasi`, `blocker`, dan milestone *Demo Pekan 7*.
+Contoh: "Verifikasi DNS gitlab.ilhem.eu.org", "Uji restore dari backup",
+"Ukur penggunaan memori setelah tuning".
+
+**5. Wiki** berisi catatan operasional: prosedur backup, kontak, troubleshooting.
+
