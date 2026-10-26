@@ -929,3 +929,27 @@ Ganti `gitlab` pada perintah `docker cp` dengan nama container sebenarnya;
 Coolify memberi awalan nama service pada container yang dibuatnya, yang dapat
 dilihat dengan `docker ps`.
 
+### Backup Periodik
+
+Backup mingguan lewat cron host (`crontab -e` sebagai root):
+
+```cron
+# Backup aplikasi GitLab tiap Minggu 02:00
+0 2 * * 0 cd /path/ke/ProyekKDJK_Kel5_P3 && docker compose exec -T gitlab gitlab-backup create CRON=1 GITLAB_BACKUP_MAX_CONCURRENCY=2
+
+# Backup konfigurasi + secrets tiap Minggu 02:30
+30 2 * * 0 cd /path/ke/ProyekKDJK_Kel5_P3 && tar -czf /var/backups/gitlab-config-$(date +\%F).tar.gz -C ./srv/gitlab config/
+
+# Hapus arsip konfigurasi lebih tua dari 30 hari, tiap hari 03:00
+0 3 * * * find /var/backups -name 'gitlab-config-*.tar.gz' -mtime +30 -delete
+```
+
+`CRON=1` menekan keluaran saat tidak ada error, sehingga cron hanya mengirim
+email ketika benar-benar gagal.
+
+Retensi arsip backup GitLab diatur dari dalam konfigurasi (sudah aktif):
+
+```ruby
+gitlab_rails['backup_keep_time'] = 604800   # 7 hari, dalam detik
+```
+
