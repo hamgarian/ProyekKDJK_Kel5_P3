@@ -76,3 +76,52 @@ esac
 echo "  host: $HOST_ARCH  ->  arsitektur image yang dibutuhkan: $WANT_ARCH"
 echo "  tag yang di-pin di docker-compose.yml: ${IMAGE_REF:-<tidak terbaca>}"
 
+if [ -z "$IMAGE_REF" ]; then
+	bad "tidak bisa membaca tag image dari docker-compose.yml"
+elif ! command -v curl >/dev/null 2>&1; then
+	skip "curl tidak tersedia, manifest registry tidak diperiksa"
+else
+	TOKEN=$(curl -sS --max-time 30 \
+		"https://auth.docker.io/token?service=registry.docker.io&scope=repository:gitlab/gitlab-ce:pull" |
+		sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+	if [ -z "$TOKEN" ]; then
+		skip "tidak bisa mengambil token Docker Hub (offline?)"
+	else
+		MANIFEST=$(curl -sS --max-time 30 -H "Authorization: Bearer $TOKEN" \
+			-H "Accept: application/vnd.docker.distribution.manifest.list.v2+json" \
+			-H "Accept: application/vnd.oci.image.index.v1+json" \
+			-H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+			"https://registry-1.docker.io/v2/gitlab/gitlab-ce/manifests/$IMAGE_REF")
+		ARCHES=$(printf '%s' "$MANIFEST" |
+			grep -oE '"architecture"[[:space:]]*:[[:space:]]*"[a-z0-9]+"' |
+			sed 's/.*"\([a-z0-9]*\)"$/\1/' | sort -u | tr '\n' ' ')
+		if [ -z "$ARCHES" ]; then
+			bad "tag $IMAGE_REF bukan manifest multi-arch (hanya amd64) -> TIDAK jalan di $HOST_ARCH"
+		else
+			echo "  arsitektur tersedia pada tag: $ARCHES"
+			if printf '%s' "$ARCHES" | grep -qw "$WANT_ARCH"; then
+				ok "tag $IMAGE_REF menyediakan linux/$WANT_ARCH"
+			else
+				bad "tag $IMAGE_REF TIDAK menyediakan linux/$WANT_ARCH"
+			fi
+		fi
+	fi
+fi
+
+echo
+echo "== 3. Bagian wajib README.md =="
+REQUIRED_HEADINGS="Sekilas Tentang|Spesifikasi dan Arsitektur|Prasyarat|Instalasi|Konfigurasi|Reverse Proxy|Persistensi|Backup|Restore|Cara Pemakaian|Pengujian|Pemeliharaan dan Biaya|Keamanan Berkas Repositori|Pembahasan|Referensi"
+if [ ! -f README.md ]; then
+	bad "README.md tidak ditemukan"
+else
+	old_ifs=$IFS
+	IFS='|'
+	for h in $REQUIRED_HEADINGS; do
+		if grep -qiE "^#{1,4} .*$h" README.md; then
+			ok "bagian ditemukan: $h"
+		else
+			bad "bagian HILANG: $h"
+		fi
+	done
+	IFS=$old_ifs
+
