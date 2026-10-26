@@ -284,3 +284,29 @@ Hasil per tag (diperiksa 26 Oktober 2026):
 muncul mulai **tag `18.1.0-ce.0`**. Tag `18.0.0-ce.0` dan sebelumnya hanya
 amd64, sehingga **tidak dapat dipakai di host ini**.
 
+### Tag yang Dipilih
+
+Repositori ini mem-pin **`gitlab/gitlab-ce:19.5.1-ce.0`** dengan digest
+terverifikasi:
+
+```
+index  (multi-arch) - sha256:bb79dc86267c557fd11e7feb0cd9dd506dd02e991ecdd6cae11ca7d7e5d36fc3
+ ├─ linux/amd64     - sha256:939572df24c6517d0408d7355cafef3f7c6defa9d248201151a88361fc411242
+ └─ linux/arm64     - sha256:a8adb207a2caeb0bc28d43b3fdfc4963584e8b166dfbc941d0aa9b098e95efe8
+```
+
+Digest anak pada `19.5.1-ce.0` identik dengan digest anak pada tag `latest`,
+yang mengonfirmasi bahwa `19.5.1-ce.0` adalah rilis stabil terbaru saat
+pemeriksaan. Tag di-pin eksplisit (tidak memakai `latest`) sesuai anjuran
+dokumentasi GitLab untuk lingkungan produksi.
+
+Verifikasi ini dapat diulang kapan saja dengan:
+
+```sh
+./scripts/validate.sh
+```
+
+Skrip tersebut membaca tag dari `docker-compose.yml`, mendeteksi arsitektur
+host, lalu memastikan tag itu benar-benar menyediakan manifest untuk
+arsitektur tersebut - dan **gagal** bila tidak.
+
