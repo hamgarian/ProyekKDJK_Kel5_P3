@@ -682,3 +682,61 @@ URL clone akan berbentuk:
 ssh://git@gitlab.ilhem.eu.org:2222/namagrup/namaprojek.git
 ```
 
+### Konfigurasi Hemat Memori
+
+Diambil verbatim dari
+[Running GitLab in a memory-constrained environment](https://docs.gitlab.com/omnibus/settings/memory_constrained_envs/).
+Semua setting berikut sudah aktif di `docker-compose.yml`.
+
+| Setting | Nilai | Efek menurut dokumentasi resmi |
+|---|---|---|
+| `puma['worker_processes']` | `0` | Matikan clustered mode → **hemat 100–400 MB** |
+| `sidekiq['concurrency']` | `10` | Turun dari default 20 |
+| `prometheus_monitoring['enable']` | `false` | Matikan seluruh stack monitoring → **hemat ~300 MB** |
+| `gitlab_rails['env'] MALLOC_CONF` | `dirty_decay_ms:1000,muzzy_decay_ms:1000` | jemalloc lebih cepat melepas memori |
+| `gitaly['env'] MALLOC_CONF` | sama | idem untuk Gitaly |
+| `gitaly[...] GITALY_COMMAND_SPAWN_MAX_PARALLEL` | `2` | Batasi proses Git paralel |
+| `gitaly['configuration'] concurrency` | `max_per_repo: 3` | Batasi `PostReceivePack` & `SSHUploadPack` |
+
+Konfigurasi gabungan versi dokumentasi resmi:
+
+```ruby
+puma['worker_processes'] = 0
+sidekiq['concurrency'] = 10
+prometheus_monitoring['enable'] = false
+gitlab_rails['env'] = {
+  'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000'
+}
+gitaly['configuration'] = {
+  concurrency: [
+    {
+      'rpc' => "/gitaly.SmartHTTPService/PostReceivePack",
+      'max_per_repo' => 3,
+    }, {
+      'rpc' => "/gitaly.SSHService/SSHUploadPack",
+      'max_per_repo' => 3,
+    },
+  ],
+}
+gitaly['env'] = {
+  'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000',
+  'GITALY_COMMAND_SPAWN_MAX_PARALLEL' => '2'
+}
+```
+
+Dokumentasi resmi juga menyarankan menonaktifkan **Prometheus Metrics** dari
+dalam aplikasi setelah login: **Admin → Settings → Metrics and profiling →
+Metrics - Prometheus → nonaktifkan → Save changes**. Langkah ini hanya tersedia
+lewat UI dan karena itu tidak dapat diwakili oleh berkas Compose; lakukan
+setelah login administratif pertama.
+
+Konsekuensi yang harus disadari - kutipan dokumentasi:
+
+> While most GitLab parts should be functional with these settings in place,
+> you may experience unexpected degradation of both product functionality and
+> performance.
+
+Dengan `puma['worker_processes'] = 0`, hanya ada **satu** proses Puma. Request
+HTTP diproses dengan konkurensi rendah; cocok untuk ≤5 pengembang, tidak cocok
+untuk banyak pengguna bersamaan.
+
