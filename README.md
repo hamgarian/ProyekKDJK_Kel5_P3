@@ -846,3 +846,61 @@ instance utama.
 
 ---
 
+## Backup dan Restore
+
+### Membuat Backup
+
+Untuk instalasi Docker, dokumentasi resmi memberi perintah:
+
+```sh
+docker exec -t <container name> gitlab-backup create
+```
+
+Pada repositori ini:
+
+```sh
+docker compose exec -T gitlab gitlab-backup create
+```
+
+Arsip hasilnya tersimpan di `/var/opt/gitlab/backups` di dalam container, yang
+karena bind mount tampak di host sebagai:
+
+```
+./srv/gitlab/data/backups/<backup-id>_gitlab_backup.tar
+```
+
+Pola nama `<backup-id>` mengikuti format
+`<timestamp>_<YYYY>_<MM>_<DD>_<versi-gitlab>`, contoh dari dokumentasi:
+`11493107454_2018_04_25_10.6.4-ce`. Baris akhir log yang menandakan sukses:
+
+```
+Creating backup archive: <backup-id>_gitlab_backup.tar [DONE]
+```
+
+Opsi yang relevan untuk host ARM64 2 vCPU ini:
+
+```sh
+# Beri nama tetap (berguna untuk rotasi skrip)
+docker compose exec -T gitlab gitlab-backup create BACKUP=dump
+# -> menghasilkan dump_gitlab_backup.tar
+
+# Lewati pembungkusan tar (hemat I/O dan ruang sementara)
+docker compose exec -T gitlab gitlab-backup create SKIP=tar
+
+# Backup inkremental (butuh backup sebelumnya)
+docker compose exec -T gitlab gitlab-backup create INCREMENTAL=yes PREVIOUS_BACKUP=<backup-id>
+
+# Batasi konkurensi agar CPU 2 core tidak jenuh
+docker compose exec -T gitlab gitlab-backup create \
+  GITLAB_BACKUP_MAX_CONCURRENCY=2 GITLAB_BACKUP_MAX_STORAGE_CONCURRENCY=1
+
+# Simpan ke subdirektori harian
+docker compose exec -T gitlab gitlab-backup create DIRECTORY=daily
+```
+
+Komponen yang bisa dilewati dengan `SKIP=`: `db`, `uploads`, `repositories`,
+`builds`, `artifacts`, `lfs`, `pages`, `registry`, `tar`, `remote`.
+
+> Peringatan dari dokumentasi: variabel lingkungan harus ditulis **sebelum**
+> perintah, bukan setelahnya.
+
