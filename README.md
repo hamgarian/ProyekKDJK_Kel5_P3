@@ -904,3 +904,28 @@ Komponen yang bisa dilewati dengan `SKIP=`: `db`, `uploads`, `repositories`,
 > Peringatan dari dokumentasi: variabel lingkungan harus ditulis **sebelum**
 > perintah, bukan setelahnya.
 
+### Backup Berkas Konfigurasi (wajib, terpisah)
+
+`gitlab-backup create` **tidak** menyertakan berkas berikut. Keduanya harus
+disalin sendiri:
+
+| Berkas | Mengapa penting |
+|---|---|
+| `/etc/gitlab/gitlab-secrets.json` | kunci enkripsi DB - tanpa ini backup DB tak berguna |
+| `/etc/gitlab/gitlab.rb` | konfigurasi instance |
+
+```sh
+# Jalur CLI: dari host, lewat bind mount, tanpa masuk container
+tar -czf gitlab-config-$(date +%F).tar.gz -C ./srv/gitlab config/
+
+# Jalur Coolify: isi named volume diambil dari container yang berjalan
+docker cp gitlab:/etc/gitlab ./gitlab-etc-$(date +%F)
+tar -czf gitlab-config-$(date +%F).tar.gz ./gitlab-etc-$(date +%F)
+
+# Simpan ke lokasi aman di LUAR server, dan JANGAN ke repositori Git ini
+```
+
+Ganti `gitlab` pada perintah `docker cp` dengan nama container sebenarnya;
+Coolify memberi awalan nama service pada container yang dibuatnya, yang dapat
+dilihat dengan `docker ps`.
+
