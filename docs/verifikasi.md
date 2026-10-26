@@ -29,3 +29,30 @@ meneruskan permintaan sampai ke NGINX internal container.
 
 ---
 
+## 2. Belum Diuji
+
+Daftar ini bukan penghalang pemakaian, melainkan pekerjaan verifikasi yang
+memang belum dijalankan. Statusnya ditulis apa adanya.
+
+| # | Hal | Cara verifikasi nanti |
+|---|---|---|
+| 1 | Login administratif dan sesi di dalam aplikasi | login root di peramban, lihat dashboard |
+| 2 | Pengisian konten demo (grup, 4 akun anggota, projek, issue, wiki, pipeline) | ikuti bagian "Cara Pemakaian" pada README |
+| 3 | `git clone` dan `git push` via HTTPS maupun SSH port 2222 | jalankan dari klien, lihat tabel Pengujian |
+| 4 | Screenshot tampilan aplikasi | ambil sesuai daftar di `docs/screenshots/README.md`, sensor data sensitif |
+| 5 | Siklus backup dan latihan restore | `gitlab-backup create`, lalu restore ke host uji, lalu `gitlab-rake gitlab:check SANITIZE=true` |
+| 6 | Integritas aplikasi menyeluruh | `gitlab-rake gitlab:check SANITIZE=true` |
+| 7 | Pengukuran pemakaian memori setelah tuning | `docker stats --no-stream` pada container GitLab |
+| 8 | Endpoint `/-/readiness` dan `/-/liveness` | `curl -sSI` ke kedua endpoint |
+
+---
+
+## 3. Risiko yang Diketahui
+
+### R1. CPU di bawah angka acuan resmi
+Dokumentasi memory-constrained meminta **4 core** ARM7/ARM64; host hanya punya
+**2**. Instance tetap boot sampai seluruh service `run:`, tetapi boot pertama
+dan latensi request lebih lambat daripada angka acuan.
+**Mitigasi:** `start_period: 15m` pada health check kedua berkas Compose, agar
+container tidak dibunuh sebelum siap.
+
