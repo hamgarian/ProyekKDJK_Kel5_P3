@@ -205,3 +205,44 @@ memory-constrained, sedangkan halaman khusus memory-constrained menyebut 2–2,5
 GB untuk skenario ≤5 pengembang dengan repositori <100 MB. Projek ini memakai
 angka dari halaman khusus tersebut karena skala pemakaiannya sesuai.
 
+### Kondisi Host Target (terukur)
+
+Hasil pengukuran nyata pada host, bukan asumsi:
+
+```console
+$ uname -m
+aarch64
+
+$ uname -a
+Linux main-instance 6.8.0-1058-oracle #61~22.04.1-Ubuntu SMP Tue Jul 14 07:47:31 UTC 2026 aarch64 aarch64 aarch64 GNU/Linux
+
+$ nproc
+2
+
+$ free -h
+               total        used        free      shared  buff/cache   available
+Mem:            11Gi       5.0Gi       146Mi       312Mi       6.5Gi       6.1Gi
+Swap:          4.0Gi       4.0Gi       0.0Ki
+
+$ docker version | head -2
+Client: Docker Engine - Community
+ Version:           29.0.1
+```
+
+Yang perlu diperhatikan dari angka di atas:
+
+- **2 vCPU, bukan 4.** Dokumentasi memory-constrained meminta *4 core*
+  ARM7/ARM64. Host hanya punya 2. GitLab tetap boot sampai seluruh service
+  `run:`, tetapi waktu boot pertama dan latensi request lebih lambat daripada
+  angka acuan. Ini risiko kinerja yang diketahui, bukan penghalang.
+- **Swap terpakai 100 %** (4,0 GiB dari 4,0 GiB) dan RAM bebas tinggal 146 MiB
+  saat pengukuran, karena host juga menanggung beban lain. RAM *available* 6,1
+  GiB masih cukup; konfigurasi hemat memori di bagian
+  [Konfigurasi](#konfigurasi-hemat-memori) dipilih justru untuk kondisi ini.
+- Dokumentasi GitLab menyarankan **menonaktifkan swap** bila memungkinkan
+  ("Swap can cause significant performance degradation under load"), sementara
+  panduan memory-constrained justru mengandalkan swap. Untuk host 11 GiB ini,
+  swap sebaiknya tetap ada tetapi dengan `vm.swappiness=10`.
+
+---
+
