@@ -1007,3 +1007,23 @@ pemeliharaan berikutnya.
 
 ---
 
+## Cara Pemakaian
+
+Instance sudah menyajikan halaman login di <https://gitlab.ilhem.eu.org>.
+Bagian ini adalah panduan pemakaian sesudah titik itu: fungsi apa yang tersedia
+dan urutan pengisian isi instance. Pengisian konten dan pengambilan screenshot
+merupakan langkah berikutnya yang belum tercatat hasilnya di laporan ini.
+
+### Fungsi Utama yang Dipakai
+
+| Fungsi | Lokasi di UI | Yang diperlihatkan |
+|---|---|---|
+| Autentikasi & manajemen user | `/admin/users` | buat 4 akun anggota, atur peran |
+| Grup & subgrup | `/groups/new` | grup `kdjk-p3-kelompok5` |
+| Repositori Git | halaman projek | clone, commit, push via HTTPS dan SSH |
+| Merge request & review | tab `Merge requests` | MR dari branch fitur, komentar, approval, merge |
+| Issue tracker & board | tab `Issues`, `Boards` | label, milestone, assignee, papan Kanban |
+| CI/CD pipeline | tab `Build → Pipelines` | `.gitlab-ci.yml` berjalan di runner |
+| Wiki | tab `Plan → Wiki` | halaman dokumentasi internal |
+| Snippet | `/-/snippets` | potongan kode yang dibagikan |
+
