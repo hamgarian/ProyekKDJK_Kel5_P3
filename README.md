@@ -1307,3 +1307,33 @@ riwayat Git perlu ditulis ulang.
    ~300 MB dari monitoring) menandakan skenario kecil memang didukung, bukan
    sekadar ditoleransi.
 
+### Kekurangan GitLab CE
+
+1. **Sangat lapar sumber daya.** Baseline resmi 8 vCPU / 16 GB RAM untuk satu
+   node adalah angka besar bagi aplikasi yang bagi banyak tim hanya dipakai
+   sebagai Git server plus issue tracker. Perlu tuning agresif agar jalan di
+   bawah itu.
+2. **Boot pertama sangat lama.** `gitlab-ctl reconfigure` menjalankan seluruh
+   resep Chef, migrasi DB, dan kompilasi aset. Pada 2 vCPU ARM64 realistis
+   10–30 menit - cukup untuk menipu health check berdefault pendek (masalah
+   nyata di Coolify) sehingga container dibunuh sebelum siap.
+3. **Image sangat besar** (±3 GB terkompresi). Memberatkan pull awal dan tiap
+   upgrade minor.
+4. **Container monolitik.** Satu container memuat belasan service. Skala
+   per-komponen tidak mungkin, dan satu komponen bermasalah bisa menjatuhkan
+   seluruh instance. Dokumentasi resmi juga menyarankan **tidak** memakai image
+   Docker ini di Kubernetes karena menjadi *single point of failure*.
+5. **Upgrade harus berurutan.** Lompat beberapa versi minor sekaligus dapat
+   menggagalkan migrasi; ada *upgrade path* resmi yang harus diikuti versi demi
+   versi. Pada instalasi Docker ini berarti pull-and-restart bertahap.
+6. **Tidak ada MTA di dalam image.** Reset password, notifikasi issue, dan
+   undangan tidak akan terkirim sampai SMTP eksternal dikonfigurasi - kejutan
+   yang sering baru disadari setelah instance berjalan.
+7. **Fitur penting dikunci di edisi berbayar.** Merge request approval rules,
+   epic, roadmap, portfolio management, dan security dashboard tidak ada di CE.
+8. **Password root awal hanya berlaku 24 jam** dan tersimpan sebagai berkas
+   plaintext di dalam volume konfigurasi - harus segera diganti dan dihapus.
+9. **Backup tidak menyertakan secrets.** Jebakan paling mahal: operator merasa
+   sudah punya backup, padahal tanpa `gitlab-secrets.json` dump DB tidak dapat
+   didekripsi. Harus disalin manual dan terpisah.
+
