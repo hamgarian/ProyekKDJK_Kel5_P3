@@ -763,3 +763,39 @@ GitLab.
 
 ---
 
+## Persistensi Data
+
+GitLab Omnibus menyimpan **semua** state di tiga direktori. Ketiganya
+di-*bind mount* ke host agar data bertahan melewati `docker compose down`,
+upgrade image, dan restart host.
+
+| Host (relatif terhadap repo) | Container | Isi |
+|---|---|---|
+| `./srv/gitlab/config` | `/etc/gitlab` | `gitlab.rb`, **`gitlab-secrets.json`**, sertifikat |
+| `./srv/gitlab/logs` | `/var/log/gitlab` | log seluruh komponen |
+| `./srv/gitlab/data` | `/var/opt/gitlab` | PostgreSQL, repositori Git, upload, artifact, **backup** |
+
+Pemetaan ini sama dengan yang didokumentasikan GitLab, hanya saja dokumentasi
+resmi memakai variabel `$GITLAB_HOME` (umumnya `/srv/gitlab`):
+
+```sh
+export GITLAB_HOME=/srv/gitlab   # lalu volume: $GITLAB_HOME/config:/etc/gitlab, dst.
+```
+
+Jalur CLI pada repositori ini memakai path relatif `./srv/gitlab` supaya satu
+direktori projek berisi semuanya tanpa path absolut.
+
+Pada jalur Coolify yang dipakai instance aktif, tiga titik mount yang sama
+dipenuhi oleh **named volume** Docker, bukan bind mount:
+
+| Named volume | Container |
+|---|---|
+| `gitlab-config` | `/etc/gitlab` |
+| `gitlab-logs` | `/var/log/gitlab` |
+| `gitlab-data` | `/var/opt/gitlab` |
+
+Named volume tetap bertahan melewati `docker compose down` dan redeploy dari
+panel, tetapi lokasinya ada di bawah `/var/lib/docker/volumes`. Untuk menyalin
+isinya keluar, pakai `docker cp` dari container yang berjalan atau mount volume
+tersebut ke container bantu.
+
