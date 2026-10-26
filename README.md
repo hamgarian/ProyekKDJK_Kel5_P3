@@ -1414,3 +1414,25 @@ definisi service yang berjalan.
 
 ---
 
+## Validasi Repositori
+
+Satu pemeriksaan yang bisa dijalankan tersedia di repositori ini:
+
+```sh
+./scripts/validate.sh
+```
+
+Yang diperiksa:
+
+1. `docker-compose.yml` dapat di-parse `docker compose config` (env diambil dari `.env.example`, jadi `.env` asli tidak diperlukan) dan merupakan YAML valid;
+2. tag image yang di-pin benar-benar menyediakan manifest untuk **arsitektur host saat ini** - gagal bila tidak;
+3. README memuat seluruh bagian wajib dan keempat NIM anggota;
+4. tidak ada `.env`, kunci, `gitlab-secrets.json`, atau kredensial literal yang ter-commit;
+5. klaim screenshot di README konsisten dengan berkas yang benar-benar ada;
+6. tidak ada karakter em dash pada berkas Markdown (gaya penulisan laporan ini).
+
+Skrip ini hanya membaca berkas dan menanyakan manifest ke Docker Hub. Skrip
+**tidak** menarik image, menjalankan container, atau menyentuh server.
+
+---
+
