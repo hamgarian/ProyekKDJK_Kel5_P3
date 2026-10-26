@@ -337,3 +337,125 @@ uptime tentu berbeda pada setiap pemeriksaan.
 
 ---
 
+## Instalasi
+
+Dua jalur dijelaskan di bawah. Jalur A adalah pemasangan Docker Compose murni
+lewat CLI dan dapat diulang di host mana pun. Jalur B adalah jalur yang dipakai
+untuk instance aktif `gitlab.ilhem.eu.org`.
+
+### A. Instalasi via CLI (Docker Compose)
+
+#### 1. Pasang Docker Engine dan plugin Compose
+
+```sh
+# Ubuntu/Debian - repositori resmi Docker
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+     -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io \
+     docker-buildx-plugin docker-compose-plugin
+```
+
+Verifikasi, termasuk arsitektur yang dilaporkan Docker:
+
+```sh
+docker version
+docker compose version
+docker info --format '{{.Architecture}} / {{.OSType}}'   # harus: aarch64 / linux
+```
+
+#### 2. Siapkan swap dan swappiness
+
+Dokumentasi memory-constrained GitLab mewajibkan swap tersedia **sebelum**
+instalasi. Host target sudah punya 4 GiB swap; bila belum:
+
+```sh
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# Kurangi kecenderungan swap-out
+sudo sysctl vm.swappiness=10
+echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
+
+free -h    # pastikan baris Swap terisi
+```
+
+#### 3. Ubah port SSH host (agar port 22 bebas untuk GitLab) - opsional
+
+Konfigurasi pada repositori ini **tidak** memakai port 22 host; GitLab Shell
+dipetakan ke `2222`. Bila nanti diinginkan URL clone tanpa nomor port,
+dokumentasi GitLab menyarankan memindahkan sshd host:
+
+```sh
+sudo sed -i 's/^#\?Port .*/Port 2424/' /etc/ssh/sshd_config
+sudo systemctl restart ssh
+# WAJIB: buka sesi terminal BARU dan uji login sebelum menutup sesi lama
+```
+
+#### 4. Ambil repositori dan siapkan `.env`
+
+```sh
+git clone https://github.com/hamgarian/ProyekKDJK_Kel5_P3.git
+cd ProyekKDJK_Kel5_P3
+
+cp .env.example .env
+$EDITOR .env          # sesuaikan GITLAB_HOST dan GITLAB_EXTERNAL_URL
+```
+
+#### 5. Siapkan direktori volume
+
+```sh
+mkdir -p ./srv/gitlab/config ./srv/gitlab/logs ./srv/gitlab/data
+```
+
+#### 6. Validasi konfigurasi sebelum menjalankan apa pun
+
+```sh
+./scripts/validate.sh                       # cek repo + kompatibilitas arsitektur
+docker compose config                       # cek hasil interpolasi env
+```
+
+#### 7. Tarik image dan jalankan
+
+```sh
+docker compose pull
+docker compose up -d
+```
+
+#### 8. Pantau proses boot
+
+Boot pertama GitLab lama - pada 2 vCPU ARM64 realistisnya **10–30 menit**,
+karena `gitlab-ctl reconfigure` menjalankan seluruh resep Chef, migrasi basis
+data, dan kompilasi aset.
+
+```sh
+docker compose logs -f gitlab          # ikuti log reconfigure
+docker compose ps                      # tunggu status: healthy
+docker compose exec gitlab gitlab-ctl status
+```
+
+#### 9. Ambil password root awal
+
+Password root dibuat otomatis pada boot pertama dan **hanya berlaku 24 jam**.
+
+```sh
+docker compose exec gitlab \
+  grep 'Password:' /etc/gitlab/initial_root_password
+```
+
+> Jangan pernah menyalin password ini ke dalam repositori. Segera login dan
+> ganti lewat **Edit profile → Password**, lalu hapus berkas
+> `initial_root_password`.
+
