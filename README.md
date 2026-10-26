@@ -246,3 +246,41 @@ Yang perlu diperhatikan dari angka di atas:
 
 ---
 
+## Arsitektur Host dan Kompatibilitas Image
+
+Host adalah **ARM64 (`aarch64`)**, sehingga kompatibilitas image wajib
+diperiksa sebelum apa pun ditulis. Pemeriksaan dilakukan langsung ke Docker Hub
+Registry API, bukan berdasarkan ingatan atau tag yang diasumsikan ada.
+
+### Hasil Pemeriksaan Manifest
+
+Perintah yang dipakai (dapat diulang siapa pun):
+
+```sh
+TOKEN=$(curl -sS "https://auth.docker.io/token?service=registry.docker.io&scope=repository:gitlab/gitlab-ce:pull" \
+        | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+
+curl -sS -H "Authorization: Bearer $TOKEN" \
+     -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json" \
+     -H "Accept: application/vnd.oci.image.index.v1+json" \
+     -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+     "https://registry-1.docker.io/v2/gitlab/gitlab-ce/manifests/19.5.1-ce.0"
+```
+
+Hasil per tag (diperiksa 26 Oktober 2026):
+
+| Tag `gitlab/gitlab-ce` | amd64 | arm64 | Bentuk manifest |
+|---|---|---|---|
+| `17.11.0-ce.0` | ✅ | ❌ | manifest tunggal, **bukan** multi-arch |
+| `18.0.0-ce.0` | ✅ | ❌ | manifest tunggal, **bukan** multi-arch |
+| `18.1.0-ce.0` | ✅ | ✅ | manifest list |
+| `18.2.0-ce.0` … `18.5.1-ce.0` | ✅ | ✅ | manifest list |
+| `18.11.13-ce.0` | ✅ | ✅ | manifest list |
+| `19.4.3-ce.0` | ✅ | ✅ | manifest list |
+| **`19.5.1-ce.0`** ← dipakai | ✅ | ✅ | OCI image index |
+| `latest` | ✅ | ✅ | OCI image index |
+
+**Kesimpulan:** dukungan `linux/arm64` resmi pada image `gitlab/gitlab-ce`
+muncul mulai **tag `18.1.0-ce.0`**. Tag `18.0.0-ce.0` dan sebelumnya hanya
+amd64, sehingga **tidak dapat dipakai di host ini**.
+
