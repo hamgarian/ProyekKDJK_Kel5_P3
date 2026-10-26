@@ -1095,3 +1095,31 @@ git clone ssh://git@gitlab.ilhem.eu.org:2222/kdjk-p3-kelompok5/laporan-kdjk.git
 #    Admin -> Settings -> Metrics and profiling -> Metrics - Prometheus
 ```
 
+### Pemeriksaan Kesehatan Setelah Deploy
+
+```sh
+docker compose exec gitlab gitlab-ctl status            # semua service harus "run:"
+docker compose exec gitlab gitlab-rake gitlab:check SANITIZE=true
+docker stats --no-stream gitlab                         # bandingkan dengan target hemat memori
+curl -sSI https://gitlab.ilhem.eu.org/users/sign_in | head -1
+curl -sS https://gitlab.ilhem.eu.org/-/readiness
+curl -sS https://gitlab.ilhem.eu.org/-/liveness
+```
+
+Perintah pertama dan keempat sudah dijalankan pada instance ini dan hasilnya
+tercantum di [Ringkasan Hasil](#ringkasan-hasil).
+
+### Screenshot
+
+Direktori [`docs/screenshots/`](docs/screenshots/) saat ini hanya memuat
+`.gitkeep` dan `README.md` penjelas, dan tidak ada satu pun gambar yang
+ditanamkan di laporan ini. Daftar tangkapan layar beserta ketentuan penyensoran
+ada di [`docs/screenshots/README.md`](docs/screenshots/README.md).
+
+Aturan yang dipegang: tautan gambar baru ditulis setelah berkasnya benar-benar
+ada. `scripts/validate.sh` bagian 5 **gagal** bila laporan ini menanamkan
+gambar yang berkasnya tidak ada, sehingga klaim screenshot tidak bisa
+menyimpang dari kenyataan tanpa terdeteksi.
+
+---
+
