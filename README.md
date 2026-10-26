@@ -1436,3 +1436,43 @@ Skrip ini hanya membaca berkas dan menanyakan manifest ke Docker Hub. Skrip
 
 ---
 
+## Referensi
+
+Seluruh perintah dan nilai konfigurasi pada dokumen ini diambil dari sumber
+berikut, diakses **26 Oktober 2026**.
+
+### Dokumentasi Resmi GitLab
+
+1. **Install GitLab in a Docker container** - contoh `docker-compose.yml`
+   resmi, `GITLAB_OMNIBUS_CONFIG`, `shm_size: '256m'`, pemetaan volume
+   `/etc/gitlab` · `/var/log/gitlab` · `/var/opt/gitlab`, penamaan tag
+   `gitlab/gitlab-ce:<version>-ce.0`, perintah password root awal.
+   <https://docs.gitlab.com/install/docker/installation/>
+2. **GitLab installation requirements** - baseline 8 vCPU / 16 GB, pernyataan
+   "ARM-based processors are supported", kebijakan swap, kebutuhan storage.
+   <https://docs.gitlab.com/install/requirements/>
+3. **Running GitLab in a memory-constrained environment** - spesifikasi
+   minimum 4 core ARM7/ARM64, 2–2,5 GB RAM + 1 GB swap, seluruh setting
+   `puma`/`sidekiq`/`gitaly`/`MALLOC_CONF`, dan angka penghematan memori.
+   <https://docs.gitlab.com/omnibus/settings/memory_constrained_envs/>
+4. **Back up GitLab** - `gitlab-backup create`, varian Docker
+   `docker exec -t <container name> gitlab-backup create`, lokasi
+   `/var/opt/gitlab/backups`, opsi `BACKUP=` `SKIP=` `INCREMENTAL=`
+   `DIRECTORY=` `GITLAB_BACKUP_MAX_CONCURRENCY=`, dan daftar berkas
+   konfigurasi yang harus dibackup terpisah.
+   <https://docs.gitlab.com/administration/backup_restore/backup_gitlab/>
+5. **Restore GitLab** - urutan `gitlab-ctl stop puma` / `stop sidekiq` /
+   `gitlab-backup restore BACKUP=<id>` / `reconfigure` /
+   `gitlab-rake gitlab:check SANITIZE=true`, termasuk varian `docker exec`.
+   <https://docs.gitlab.com/administration/backup_restore/restore_gitlab/>
+6. **Configure the GitLab Docker container** (`GITLAB_OMNIBUS_CONFIG`,
+   pre-configure container).
+   <https://docs.gitlab.com/install/docker/configuration/>
+7. **NGINX settings (Omnibus)** - `nginx['listen_port']`,
+   `nginx['listen_https']`, `nginx['proxy_set_headers']` untuk proxy eksternal.
+   <https://docs.gitlab.com/omnibus/settings/nginx/>
+8. **Upgrade path GitLab** - urutan upgrade antarversi.
+   <https://docs.gitlab.com/update/upgrade_paths/>
+9. **GitLab Community Edition tags (Docker Hub)** - daftar tag resmi.
+   <https://hub.docker.com/r/gitlab/gitlab-ce/tags>
+
