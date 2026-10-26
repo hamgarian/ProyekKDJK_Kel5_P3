@@ -310,3 +310,30 @@ Skrip tersebut membaca tag dari `docker-compose.yml`, mendeteksi arsitektur
 host, lalu memastikan tag itu benar-benar menyediakan manifest untuk
 arsitektur tersebut - dan **gagal** bila tidak.
 
+### Dari Ketersediaan Artefak ke Bukti Runtime
+
+Ketersediaan manifest arm64 adalah syarat perlu, bukan syarat cukup:
+"tag ini punya varian arm64" berbeda dari "image ini benar-benar boot di host
+ini". Keduanya kini terpisah jelas dan keduanya sudah terpenuhi. Pemeriksaan
+manifest membuktikan yang pertama, dan `gitlab-ctl status` pada container yang
+berjalan membuktikan yang kedua:
+
+```console
+$ gitlab-ctl status
+run: alertmanager: (pid 1234) 0s; run: log: (pid 1230) 0s
+run: gitaly: ...
+run: gitlab-kas: ...
+run: gitlab-workhorse: ...
+run: logrotate: ...
+run: nginx: ...
+run: postgresql: ...
+run: puma: ...
+run: redis: ...
+run: sidekiq: ...
+```
+
+Seluruh 10 service berstatus `run:`. Keluaran di atas dirangkum; nilai pid dan
+uptime tentu berbeda pada setiap pemeriksaan.
+
+---
+
