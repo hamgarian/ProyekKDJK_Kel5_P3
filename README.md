@@ -1501,3 +1501,29 @@ berikut, diakses **26 Oktober 2026**.
 17. **Let's Encrypt - Challenge Types**.
     <https://letsencrypt.org/docs/challenge-types/>
 
+### Docker
+
+18. **Install Docker Engine on Ubuntu**.
+    <https://docs.docker.com/engine/install/ubuntu/>
+19. **Docker Compose file reference** - `shm_size`, `healthcheck`, `volumes`,
+    interpolasi variabel.
+    <https://docs.docker.com/reference/compose-file/>
+20. **Docker Compose - environment variables & interpolation**.
+    <https://docs.docker.com/compose/how-tos/environment-variables/>
+
+### Coolify
+
+21. **Coolify Documentation - Docker Compose based applications**.
+    <https://coolify.io/docs/applications/>
+22. **Coolify Documentation - Services & domains**.
+    <https://coolify.io/docs/knowledge-base/domains>
+
+### Templat dan Panduan Projek
+
+23. **Templat laporan praktikum Komdat** (auriza/komdat-lab).
+    <https://github.com/auriza/komdat-lab/blob/master/templat.md>
+24. **Petunjuk Projek Akhir** (auriza/komdat-lab).
+    <https://github.com/auriza/komdat-lab/blob/master/projek.md>
+25. **awesome-selfhosted** - daftar pilihan aplikasi web self-hosted.
+    <https://github.com/awesome-selfhosted/awesome-selfhosted>
+
