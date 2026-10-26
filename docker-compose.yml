@@ -1,0 +1,23 @@
+# GitLab CE - deployment untuk projek KDJK, jalur CLI docker compose.
+#
+# Image: resmi gitlab/gitlab-ce (Docker Hub), tag di-pin ke 19.5.1-ce.0.
+# Dukungan arm64 tag ini diverifikasi lewat registry manifest
+# (lihat scripts/validate.sh dan bagian "Arsitektur Host" di README.md).
+#
+# Berkas ini memakai bind mount ./srv/gitlab dan mem-bind HTTP ke 127.0.0.1,
+# jadi reverse proxy di host yang mengekspos instance ke publik.
+# Instance aktif gitlab.ilhem.eu.org dijalankan lewat Coolify dengan definisi
+# yang tersalin di compose.coolify.yaml.
+
+services:
+  gitlab:
+    # Digest index multi-arch 19.5.1-ce.0 yang diverifikasi:
+    #   sha256:bb79dc86267c557fd11e7feb0cd9dd506dd02e991ecdd6cae11ca7d7e5d36fc3
+    #   -> child linux/amd64 sha256:939572df24c6517d0408d7355cafef3f7c6defa9d248201151a88361fc411242
+    #   -> child linux/arm64 sha256:a8adb207a2caeb0bc28d43b3fdfc4963584e8b166dfbc941d0aa9b098e95efe8
+    image: gitlab/gitlab-ce:19.5.1-ce.0
+    container_name: gitlab
+    restart: always
+    hostname: '${GITLAB_HOST:?set GITLAB_HOST di .env}'
+    shm_size: '256m'
+
