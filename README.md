@@ -1527,3 +1527,27 @@ berikut, diakses **26 Oktober 2026**.
 25. **awesome-selfhosted** - daftar pilihan aplikasi web self-hosted.
     <https://github.com/awesome-selfhosted/awesome-selfhosted>
 
+### Perbandingan Platform
+
+26. **GitLab - Pricing / feature comparison per tier**.
+    <https://about.gitlab.com/pricing/>
+27. **GitHub - Plans and pricing**.
+    <https://github.com/pricing>
+28. **GitLab - CE vs EE feature comparison**.
+    <https://about.gitlab.com/install/ce-or-ee/>
+
+---
+
+## Lisensi dan Catatan
+
+Dokumen dan konfigurasi dalam repositori ini disusun untuk keperluan
+akademik mata kuliah KDJK. GitLab Community Edition berlisensi MIT.
+
+### Catatan tentang Riwayat Git
+
+Riwayat commit repositori ini **disusun ulang per topik dari deliverable
+akhir**: tiap commit mengelompokkan satu perubahan nyata (satu bagian laporan,
+satu blok konfigurasi, satu pemeriksaan skrip) supaya mudah dibaca dan
+di-review. Karena itu cap waktu commit adalah waktu penyusunan ulang tersebut,
+**bukan** bukti kronologis urutan pengerjaan yang sebenarnya. Isi akhir
+repositori tetap utuh dan sama dengan artefak yang diserahkan.
