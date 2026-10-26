@@ -21,3 +21,44 @@ services:
     hostname: '${GITLAB_HOST:?set GITLAB_HOST di .env}'
     shm_size: '256m'
 
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        # --- URL eksternal -------------------------------------------------
+        # TLS diterminasi oleh reverse proxy di depan container, sehingga
+        # external_url memakai https:// tetapi nginx internal tetap HTTP.
+        external_url '${GITLAB_EXTERNAL_URL:?set GITLAB_EXTERNAL_URL di .env}'
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+        nginx['proxy_set_headers'] = {
+          'X-Forwarded-Proto' => 'https',
+          'X-Forwarded-Ssl'   => 'on'
+        }
+        letsencrypt['enable'] = false
+
+        # Port SSH yang diiklankan di URL clone (lihat mapping ports: di bawah).
+        gitlab_rails['gitlab_shell_ssh_port'] = ${GITLAB_SSH_PORT:-2222}
+
+        # --- Penghematan memori -------------------------------------------
+        # Sumber: https://docs.gitlab.com/omnibus/settings/memory_constrained_envs/
+        puma['worker_processes'] = 0
+        sidekiq['concurrency'] = 10
+        prometheus_monitoring['enable'] = false
+        gitlab_rails['env'] = {
+          'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000'
+        }
+        gitaly['configuration'] = {
+          concurrency: [
+            {
+              'rpc' => "/gitaly.SmartHTTPService/PostReceivePack",
+              'max_per_repo' => 3,
+            }, {
+              'rpc' => "/gitaly.SSHService/SSHUploadPack",
+              'max_per_repo' => 3,
+            },
+          ],
+        }
+        gitaly['env'] = {
+          'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000',
+          'GITALY_COMMAND_SPAWN_MAX_PARALLEL' => '2'
+        }
+
