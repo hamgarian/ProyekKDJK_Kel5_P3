@@ -1161,3 +1161,30 @@ restore; semuanya masih terbuka dan dicatat di
 
 ---
 
+## Pemeliharaan dan Biaya
+
+### Pemeriksaan Rutin
+
+```sh
+cd /path/ke/ProyekKDJK_Kel5_P3
+
+docker compose ps                                   # status & health
+docker compose exec gitlab gitlab-ctl status        # status tiap service
+docker compose logs --tail=100 gitlab              # 100 baris log terakhir
+docker stats --no-stream gitlab                    # CPU & memori
+df -h ./srv/gitlab/data                            # sisa ruang disk
+```
+
+Log di dalam container sudah dirotasi oleh `logrotate` bawaan Omnibus, tetapi
+`./srv/gitlab/logs` di host tetap perlu dipantau karena ikut memakan disk.
+
+### Jadwal Pemeliharaan yang Disarankan
+
+| Frekuensi | Pekerjaan |
+|---|---|
+| Harian | periksa `docker compose ps` masih `healthy`; pantau sisa disk |
+| Mingguan | `gitlab-backup create`; backup `gitlab-secrets.json` + `gitlab.rb` terpisah |
+| Bulanan | naikkan tag image ke patch terbaru (bertahap, ikuti upgrade path); baca release note keamanan |
+| Per kuartal | **latihan restore** ke direktori/host uji, lalu `gitlab:check SANITIZE=true` |
+| Sesuai kebutuhan | `docker compose exec gitlab gitlab-rake cache:clear`; bersihkan artifact lama |
+
