@@ -32,3 +32,10 @@ tanamkan ke bagian "Cara Pemakaian" pada `README.md`.
 | 14 | `14-clone-ssh.png` | Terminal: `git clone` via SSH port 2222 berhasil |
 
 ## Ketentuan
+
+- Format `.png`, lebar minimal 1280 px agar teks terbaca.
+- **Sensor** setiap token, password, kunci privat, dan alamat email pribadi
+  sebelum di-commit.
+- Jangan sertakan isi `/etc/gitlab/initial_root_password` dalam bentuk apa pun.
+- Setiap screenshot harus memperlihatkan **data nyata**, bukan instance kosong,
+  karena ini syarat eksplisit templat laporan.
