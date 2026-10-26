@@ -1244,3 +1244,40 @@ container otomatis hidup kembali setelah host di-reboot.
 
 ---
 
+## Keamanan Berkas Repositori
+
+Repositori ini **publik**, sehingga apa pun yang ter-commit dapat dibaca siapa
+saja dan tetap ada di riwayat Git meski kemudian dihapus.
+
+Yang **tidak boleh** masuk ke repositori ini:
+
+| Berkas / data | Alasan |
+|---|---|
+| `.env` | memuat hostname dan konfigurasi spesifik deployment |
+| `gitlab-secrets.json` | kunci enkripsi basis data - paling kritis |
+| `gitlab.rb` hasil generate | dapat memuat password SMTP dan token |
+| `*.pem`, `*.key` | kunci privat TLS dan SSH |
+| `initial_root_password` | password root awal dalam bentuk plaintext |
+| `*_gitlab_backup.tar` | memuat seluruh basis data dan repositori |
+| Direktori `srv/` | seluruh data runtime |
+| Token Personal Access / CI, password SMTP | kredensial aktif |
+
+Pencegahannya berlapis:
+
+1. [`.gitignore`](.gitignore) menolak semua pola di atas.
+2. `scripts/validate.sh` bagian 4 **gagal** bila `.env`, berkas kunci,
+   `gitlab-secrets.json`, atau kredensial literal sampai ter-*track*.
+3. Nilai sensitif tidak pernah ditulis di `docker-compose.yml`; semuanya
+   diambil dari variabel lingkungan dengan contoh aman di `.env.example`.
+
+Sebelum meng-commit screenshot, periksa ulang tidak ada password, token,
+alamat email pribadi, alamat IP internal, atau nama host lain yang terlihat di
+gambar - sensor bila ada. Ketentuan lengkapnya ada di
+[`docs/screenshots/README.md`](docs/screenshots/README.md).
+
+Bila suatu saat rahasia sempat ter-commit, mengganti berkasnya saja tidak
+cukup: kredensial tersebut harus dianggap bocor dan **dirotasi**, dan
+riwayat Git perlu ditulis ulang.
+
+---
+
