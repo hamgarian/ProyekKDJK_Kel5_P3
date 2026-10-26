@@ -1337,3 +1337,54 @@ riwayat Git perlu ditulis ulang.
    sudah punya backup, padahal tanpa `gitlab-secrets.json` dump DB tidak dapat
    didekripsi. Harus disalin manual dan terpisah.
 
+### Perbandingan dengan GitLab.com dan GitHub
+
+| Aspek | **GitLab CE self-hosted** (projek ini) | **GitLab.com** (SaaS) | **GitHub** (SaaS) |
+|---|---|---|---|
+| Model | Self-hosted, MIT | SaaS, freemium | SaaS, freemium |
+| Biaya langsung | Rp 0 lisensi; biaya server + waktu admin | Free tier; Premium ~US$29/user/bln | Free tier; Team ~US$4/user/bln |
+| Kendali data | **Penuh**, di server sendiri | Di infrastruktur GitLab Inc. | Di infrastruktur Microsoft |
+| Beban sysadmin | **Tinggi** - upgrade, backup, TLS, monitoring semua sendiri | Tidak ada | Tidak ada |
+| Uptime | Tanggung jawab sendiri | SLA vendor | SLA vendor |
+| Menit CI/CD | **Tak terbatas**, sebatas kapasitas server | Kuota bulanan, lewat itu berbayar | Kuota bulanan (Actions), lewat itu berbayar |
+| Runner CI | Sendiri, bebas arsitektur (termasuk ARM64) | Shared runner atau self-hosted | Shared runner atau self-hosted |
+| Repo privat | Tak terbatas | Tak terbatas | Tak terbatas |
+| Ekosistem & komunitas | Terisolasi, hanya anggota instance | Besar | **Terbesar** - paling baik untuk projek publik |
+| Marketplace/integrasi | Terbatas | Sedang | **Sangat kaya** (GitHub Apps, Actions Marketplace) |
+| Code review | Merge request | Merge request + approval rules (berbayar) | Pull request + CODEOWNERS |
+| Perencanaan | Issue, board, milestone | + epic, roadmap (berbayar) | Issues + Projects (papan modern) |
+| Container registry | Termasuk, tanpa biaya | Termasuk, ada kuota storage | GitHub Packages, ada kuota |
+| AI assist | Tidak ada di CE | GitLab Duo (berbayar) | Copilot (berbayar) |
+| Kebebasan kustomisasi | **Maksimal** - `gitlab.rb`, versi, plugin OS | Terbatas pada pengaturan UI | Terbatas pada pengaturan UI |
+| Kepatuhan/kedaulatan data | **Terbaik** - data tak pernah keluar | Bergantung region vendor | Bergantung region vendor |
+| Risiko *vendor lock-in* | Rendah (sumber terbuka, data lokal) | Sedang | Sedang–tinggi |
+| Risiko kehilangan data | **Di tangan sendiri** - backup salah = hilang | Rendah | Rendah |
+
+#### Kapan masing-masing masuk akal
+
+**GitLab CE self-hosted** cocok ketika kode tidak boleh keluar dari
+infrastruktur sendiri (regulasi, kebijakan institusi), ketika kebutuhan CI
+besar sehingga kuota SaaS menjadi mahal, ketika sudah ada server yang idle,
+atau - seperti projek ini - ketika tujuannya memang **mempelajari administrasi
+sistem**: reverse proxy, TLS, persistensi volume, dan backup.
+
+**GitLab.com** cocok bila alur kerja GitLab (MR, pipeline) disukai tetapi tidak
+ada orang yang mau mengurus server. Fitur sama, tanpa beban operasional.
+
+**GitHub** cocok untuk projek sumber terbuka dan kolaborasi lintas organisasi.
+Jaringan pengembang terbesar, ekosistem Actions paling kaya, dan kehadiran di
+GitHub punya nilai sosial tersendiri.
+
+#### Penilaian jujur untuk konteks projek ini
+
+Secara murni teknis-ekonomis, kebutuhan kelompok 4 orang untuk satu mata kuliah
+akan **lebih hemat dan lebih andal** dengan GitLab.com atau GitHub gratis:
+nol biaya, nol pemeliharaan, tanpa risiko instance mati sebelum demo.
+
+Nilai self-hosting di sini bukan efisiensi, melainkan **pembelajaran**, yaitu
+menghadapi langsung keputusan nyata yang tidak muncul saat memakai SaaS:
+memverifikasi arsitektur image sebelum memilih tag, menyadari bahwa 2 vCPU di
+bawah angka acuan, memahami mengapa `listen_https = false` justru diperlukan
+saat `external_url` berskema `https`, dan mengetahui bahwa backup tanpa
+`gitlab-secrets.json` adalah ilusi. Itu justru inti mata kuliah ini.
+
