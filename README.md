@@ -953,3 +953,57 @@ Retensi arsip backup GitLab diatur dari dalam konfigurasi (sudah aktif):
 gitlab_rails['backup_keep_time'] = 604800   # 7 hari, dalam detik
 ```
 
+### Restore
+
+Prasyarat yang disebut dokumentasi: versi GitLab yang me-restore harus
+**sama persis** dengan versi saat backup dibuat, dan instance sudah pernah
+`gitlab-ctl reconfigure`.
+
+Urutan untuk instalasi Docker (verbatim dari dokumentasi, disesuaikan ke Compose):
+
+```sh
+# 1. Letakkan arsip backup di direktori backups yang terlihat container
+cp <backup-id>_gitlab_backup.tar ./srv/gitlab/data/backups/
+
+# 2. Pulihkan gitlab-secrets.json dan gitlab.rb lebih dulu, lalu restart
+#    (tanpa secrets yang cocok, restore DB akan menghasilkan data tak terbaca)
+tar -xzf gitlab-config-YYYY-MM-DD.tar.gz -C ./srv/gitlab
+docker compose restart gitlab
+
+# 3. Hentikan proses yang memegang koneksi ke basis data
+docker compose exec -T gitlab gitlab-ctl stop puma
+docker compose exec -T gitlab gitlab-ctl stop sidekiq
+
+# 4. Pastikan keduanya benar-benar berhenti
+docker compose exec -T gitlab gitlab-ctl status
+
+# 5. Jalankan restore (sebutkan backup-id TANPA akhiran _gitlab_backup.tar)
+docker compose exec -T gitlab \
+  gitlab-backup restore BACKUP=11493107454_2018_04_25_10.6.4-ce
+
+# 6. Reconfigure dan hidupkan kembali
+docker compose exec -T gitlab gitlab-ctl reconfigure
+docker compose restart gitlab
+
+# 7. Periksa integritas hasil restore
+docker compose exec -T gitlab gitlab-rake gitlab:check SANITIZE=true
+```
+
+Opsi restore yang berguna:
+
+```sh
+# Lewati konfirmasi interaktif (untuk skrip)
+docker compose exec -T gitlab env GITLAB_ASSUME_YES=1 gitlab-backup restore BACKUP=<backup-id>
+
+# Restore sebagian komponen saja
+docker compose exec -T gitlab gitlab-backup restore BACKUP=<backup-id> SKIP=db,uploads
+```
+
+Satu catatan jujur: siklus restore pada instance ini belum pernah dijalankan
+(lihat [docs/verifikasi.md](docs/verifikasi.md)). Prosedur di atas berasal dari
+dokumentasi resmi, dan backup yang belum pernah diuji restore belum pantas
+disebut backup. Latihan restore ke direktori atau host uji adalah pekerjaan
+pemeliharaan berikutnya.
+
+---
+
