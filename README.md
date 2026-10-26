@@ -536,3 +536,149 @@ definisi tersebut, disimpan agar konfigurasi instance ikut ter-versi.
 
 ---
 
+## Konfigurasi
+
+Seluruh konfigurasi GitLab dilakukan lewat variabel `GITLAB_OMNIBUS_CONFIG`
+pada `docker-compose.yml`. Isinya adalah baris-baris `gitlab.rb` yang
+dituliskan ke `/etc/gitlab/gitlab.rb` lalu diterapkan oleh
+`gitlab-ctl reconfigure` setiap container start.
+
+### Konfigurasi Reverse Proxy dan TLS
+
+Pendekatan yang dipakai: **TLS diterminasi di luar container.** NGINX internal
+GitLab hanya melayani HTTP di port 80 ke loopback, dan reverse proxy di host
+yang memegang sertifikat.
+
+Konfigurasi di dalam container:
+
+```ruby
+external_url 'https://gitlab.ilhem.eu.org'
+nginx['listen_port'] = 80           # NGINX internal tetap HTTP
+nginx['listen_https'] = false       # TLS bukan tugas container
+nginx['proxy_set_headers'] = {
+  'X-Forwarded-Proto' => 'https',
+  'X-Forwarded-Ssl'   => 'on'
+}
+letsencrypt['enable'] = false       # sertifikat diurus reverse proxy
+```
+
+Tiga baris pertama itu penting dan sering terlewat: bila `external_url`
+berawalan `https://` tetapi `listen_https` tidak di-`false`, GitLab akan
+mencoba melayani TLS sendiri di port 80 dan menghasilkan redirect berulang
+(*too many redirects*). Header `X-Forwarded-Proto` diperlukan agar Rails
+membangkitkan URL absolut berskema `https`.
+
+#### Opsi 1 - Caddy (paling ringkas)
+
+`/etc/caddy/Caddyfile` di host:
+
+```caddyfile
+gitlab.ilhem.eu.org {
+    reverse_proxy 127.0.0.1:8929
+
+    # GitLab mengirim berkas besar (artifact, LFS); jangan dibatasi proxy.
+    request_body {
+        max_size 0
+    }
+}
+```
+
+```sh
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+```
+
+Caddy mengambil sertifikat Let's Encrypt otomatis via HTTP-01/TLS-ALPN,
+termasuk perpanjangannya. Tidak ada konfigurasi TLS yang perlu ditulis manual.
+
+#### Opsi 2 - NGINX di host
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name gitlab.ilhem.eu.org;
+
+    ssl_certificate     /etc/letsencrypt/live/gitlab.ilhem.eu.org/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/gitlab.ilhem.eu.org/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    client_max_body_size 0;       # jangan batasi; GitLab yang mengatur
+
+    location / {
+        proxy_pass http://127.0.0.1:8929;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Ssl   on;
+
+        proxy_read_timeout  3600;   # operasi Git besar bisa lama
+        proxy_connect_timeout 300;
+        proxy_http_version 1.1;
+    }
+}
+
+server {
+    listen 80;
+    server_name gitlab.ilhem.eu.org;
+    return 301 https://$host$request_uri;
+}
+```
+
+```sh
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+#### Opsi 3 - Traefik (jalur Coolify)
+
+Coolify menyuntikkan label Traefik sendiri saat domain diisi di UI, jadi
+biasanya tidak perlu menulis label manual. Bila Traefik dikelola sendiri:
+
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.gitlab.rule=Host(`gitlab.ilhem.eu.org`)"
+  - "traefik.http.routers.gitlab.entrypoints=websecure"
+  - "traefik.http.routers.gitlab.tls.certresolver=letsencrypt"
+  - "traefik.http.services.gitlab.loadbalancer.server.port=80"
+```
+
+#### Verifikasi TLS
+
+```sh
+# Resolve DNS
+dig +short gitlab.ilhem.eu.org
+
+# Rantai sertifikat dan masa berlaku
+echo | openssl s_client -connect gitlab.ilhem.eu.org:443 \
+       -servername gitlab.ilhem.eu.org 2>/dev/null \
+     | openssl x509 -noout -subject -issuer -dates
+
+# Halaman login lewat HTTPS (harus 200)
+curl -sSI https://gitlab.ilhem.eu.org/users/sign_in | head -1
+```
+
+Hasil pemeriksaan pada 26 Oktober 2026: permintaan HTTPS ke
+`https://gitlab.ilhem.eu.org/users/sign_in` berhasil melalui TLS tanpa
+peringatan sertifikat dan menjawab `HTTP 200` dengan halaman login GitLab
+(form **Username or email** dan **Password**) sebagai isi respons. Artinya DNS,
+penerbitan sertifikat oleh Traefik, dan rantai proxy sampai ke NGINX internal
+container bekerja sebagai satu kesatuan.
+
+#### SSH untuk `git clone`
+
+SSH **tidak** melewati reverse proxy HTTP; port TCP 2222 harus terbuka langsung.
+
+```sh
+sudo ufw allow 2222/tcp comment 'GitLab Shell SSH'
+
+# Uji dari klien setelah deploy
+ssh -T -p 2222 git@gitlab.ilhem.eu.org    # harap muncul: Welcome to GitLab, @username!
+```
+
+URL clone akan berbentuk:
+
+```
+ssh://git@gitlab.ilhem.eu.org:2222/namagrup/namaprojek.git
+```
+
