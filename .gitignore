@@ -1,0 +1,19 @@
+# Rahasia dan konfigurasi lokal
+.env
+*.pem
+*.key
+gitlab-secrets.json
+
+# Volume data runtime (bind mount dari docker-compose.yml)
+srv/
+
+# Artefak backup
+*.tar
+backups/
+
+# Sampah OS/editor
+.DS_Store
+*.swp
+
+# Handoff lokal dari pengelola server (jangan di-commit)
+PARENT-NOTES.md
