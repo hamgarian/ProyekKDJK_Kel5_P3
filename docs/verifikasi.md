@@ -82,3 +82,20 @@ berlaku 24 jam. Pada jalur Coolify, password berasal dari variabel
 `SERVICE_PASSWORD_GITLABROOT` yang dibangkitkan panel. Keduanya harus diganti
 setelah login pertama dan **tidak boleh** disalin ke repositori.
 
+### R7. `gitlab-secrets.json` tidak termasuk dalam backup
+Tanpa berkas ini, dump basis data tidak dapat didekripsi. Harus dibackup
+terpisah ke lokasi di luar server, dan tidak boleh masuk Git (sudah ada di
+`.gitignore` dan diperiksa `scripts/validate.sh`).
+
+### R8. Upgrade tidak boleh melompati versi
+Ada upgrade path resmi; lompat beberapa versi minor dapat menggagalkan migrasi
+basis data. Ganti tag image secara bertahap, jangan langsung ke `latest`.
+
+---
+
+## 4. Catatan Riwayat Git
+
+Riwayat commit repositori ini disusun ulang per topik dari deliverable akhir,
+sehingga cap waktu commit adalah waktu penyusunan ulang, bukan bukti kronologis
+urutan pengerjaan. Penjelasan lengkap ada di bagian "Catatan tentang Riwayat
+Git" pada README.
