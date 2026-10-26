@@ -799,3 +799,23 @@ panel, tetapi lokasinya ada di bawah `/var/lib/docker/volumes`. Untuk menyalin
 isinya keluar, pakai `docker cp` dari container yang berjalan atau mount volume
 tersebut ke container bantu.
 
+### Yang Paling Kritis: `gitlab-secrets.json`
+
+`./srv/gitlab/config/gitlab-secrets.json` memuat kunci enkripsi basis data.
+Tanpa berkas ini, backup basis data **tidak dapat didekripsi** - token CI/CD,
+variabel terenkripsi, dan 2FA akan hilang permanen meski dump SQL utuh.
+
+Konsekuensinya:
+
+- `gitlab-secrets.json` harus dibackup **terpisah** dari arsip backup biasa,
+  karena `gitlab-backup create` **tidak** menyertakannya.
+- Berkas ini **tidak boleh** masuk ke repositori Git. Sudah masuk daftar
+  `.gitignore`, dan `scripts/validate.sh` ikut memeriksanya.
+
+### Catatan Izin Direktori
+
+Proses di dalam container berjalan sebagai `root`, jadi dengan Docker standar
+tidak ada penyesuaian izin. Bila Docker dijalankan dalam mode *rootless* atau
+dengan user non-root, dokumentasi GitLab mewajibkan pemberian izin yang sesuai
+ke direktori volume lebih dulu.
+
