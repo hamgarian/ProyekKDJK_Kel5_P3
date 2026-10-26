@@ -1,0 +1,14 @@
+# Definisi service Docker Compose yang dipakai instance aktif
+# https://gitlab.ilhem.eu.org di Coolify.
+#
+# Ini salinan dari editor Compose milik service tersebut, disimpan agar
+# konfigurasi instance ikut ter-versi. Coolify TIDAK menarik berkas ini dari
+# GitHub: service dibuat sebagai Docker Compose langsung, bukan deployment yang
+# tertaut repositori.
+#
+# Perbedaan dengan docker-compose.yml (jalur CLI):
+#   - persistensi memakai named volume, bukan bind mount ./srv/gitlab;
+#   - port HTTP tidak dipublikasikan ke host, Traefik milik Coolify yang proxy;
+#   - password root awal berasal dari variabel magic SERVICE_PASSWORD_GITLABROOT
+#     yang dibangkitkan Coolify, jadi tidak ada rahasia di dalam berkas ini.
+
