@@ -1188,3 +1188,28 @@ Log di dalam container sudah dirotasi oleh `logrotate` bawaan Omnibus, tetapi
 | Per kuartal | **latihan restore** ke direktori/host uji, lalu `gitlab:check SANITIZE=true` |
 | Sesuai kebutuhan | `docker compose exec gitlab gitlab-rake cache:clear`; bersihkan artifact lama |
 
+### Prosedur Upgrade
+
+```sh
+# 1. Backup dulu, selalu
+docker compose exec -T gitlab gitlab-backup create
+tar -czf gitlab-config-$(date +%F).tar.gz -C ./srv/gitlab config/
+
+# 2. Ubah tag image di docker-compose.yml ke versi tujuan
+#    JANGAN melompati beberapa versi minor sekaligus (lihat upgrade path resmi)
+
+# 3. Pastikan tag baru tetap menyediakan arm64 SEBELUM pull
+./scripts/validate.sh
+
+# 4. Terapkan
+docker compose pull
+docker compose up -d
+
+# 5. Pantau migrasi basis data sampai selesai
+docker compose logs -f gitlab
+```
+
+Langkah 3 bukan formalitas: tag yang lebih lama (`18.0.0-ce.0` ke bawah) tidak
+punya arm64, jadi "upgrade" ke arah yang salah akan menghasilkan container yang
+tidak dapat dijalankan di host ini.
+
