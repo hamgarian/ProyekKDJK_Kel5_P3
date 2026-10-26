@@ -1213,3 +1213,34 @@ Langkah 3 bukan formalitas: tag yang lebih lama (`18.0.0-ce.0` ke bawah) tidak
 punya arm64, jadi "upgrade" ke arah yang salah akan menghasilkan container yang
 tidak dapat dijalankan di host ini.
 
+### Biaya
+
+| Pos | Biaya |
+|---|---|
+| Lisensi GitLab CE | **Rp 0** - sumber terbuka, MIT |
+| Server | sudah tersedia (host ARM64 milik anggota kelompok); tidak ada tambahan khusus projek ini |
+| Domain `ilhem.eu.org` | subdomain gratis pada domain yang sudah dimiliki |
+| Sertifikat TLS | **Rp 0** - Let's Encrypt |
+| Storage | bagian dari disk server; GitLab meminta minimal 20 GB untuk skenario kecil |
+| Runner CI | dijalankan di server yang sama; tanpa biaya menit CI |
+| **Biaya tak terlihat** | **waktu administrasi** - upgrade, backup, pemantauan, pemulihan insiden |
+
+Biaya uang memang mendekati nol, tetapi pos terakhir adalah yang nyata.
+GitLab.com dan GitHub pada tier gratis juga Rp 0 untuk kebutuhan sebesar ini,
+**tanpa** beban administrasi - pertimbangan yang dibahas lebih jauh di bagian
+[Pembahasan](#pembahasan).
+
+### Menghemat Sumber Daya Saat Tidak Dipakai
+
+```sh
+docker compose stop     # hentikan container, data di bind mount tetap utuh
+docker compose start    # hidupkan lagi; boot kedua jauh lebih cepat
+```
+
+Gunakan `docker compose stop`, **bukan** `down -v`. Opsi `-v` menghapus named
+volume, sehingga pada jalur Coolify perintah itu berarti menghapus seluruh data
+instance. Dengan `restart: always` pada `docker-compose.yml`,
+container otomatis hidup kembali setelah host di-reboot.
+
+---
+
