@@ -56,3 +56,29 @@ dan latensi request lebih lambat daripada angka acuan.
 **Mitigasi:** `start_period: 15m` pada health check kedua berkas Compose, agar
 container tidak dibunuh sebelum siap.
 
+### R2. Swap terpakai 100 % saat pengukuran
+`free -h` menunjukkan swap 4,0 GiB terpakai seluruhnya dan RAM bebas 146 MiB,
+karena host menanggung beban lain. RAM *available* 6,1 GiB masih cukup.
+**Mitigasi:** `vm.swappiness=10`, `mem_limit: 4g` pada service Coolify, dan
+seluruh setting hemat memori di bagian Konfigurasi README.
+
+### R3. Bentrokan port dengan Traefik milik Coolify
+Coolify memakai port 80/443 host. Definisi Compose yang dipakai tidak meminta
+kedua port itu, dan jalur CLI mem-bind HTTP hanya ke `127.0.0.1:8929`.
+**Mitigasi:** jangan mengaktifkan `letsencrypt['enable']` atau
+`nginx['listen_https']` di dalam container selama proxy eksternal dipakai.
+
+### R4. Port SSH 2222 perlu dibuka manual
+Coolify tidak mengurus port non-HTTP. Tanpa `ufw allow 2222/tcp`, clone via SSH
+gagal meski antarmuka web berfungsi.
+
+### R5. Tidak ada MTA di dalam image
+Dokumentasi resmi menyatakan image GitLab tidak memuat MTA. Reset password dan
+notifikasi tidak terkirim sampai SMTP eksternal dikonfigurasi.
+
+### R6. Password root awal
+Pada jalur CLI, password dibuat di `/etc/gitlab/initial_root_password` dan hanya
+berlaku 24 jam. Pada jalur Coolify, password berasal dari variabel
+`SERVICE_PASSWORD_GITLABROOT` yang dibangkitkan panel. Keduanya harus diganti
+setelah login pertama dan **tidak boleh** disalin ke repositori.
+
