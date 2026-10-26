@@ -65,3 +65,69 @@ Pada projek ini GitLab CE dipasang sebagai container Docker tunggal yang
 dikelola dengan Docker Compose, dengan TLS diterminasi oleh reverse proxy di
 depannya.
 
+## Spesifikasi dan Arsitektur
+
+Seluruh nilai di bawah adalah konfigurasi yang benar-benar dipakai pada host
+target, bukan contoh generik.
+
+| Komponen | Konfigurasi yang dipakai |
+|---|---|
+| Host | `main-instance`, Linux 6.8.0-1058-oracle |
+| Arsitektur CPU | **ARM64 (`aarch64`)**, 2 vCPU |
+| Memori | 11 GiB RAM + 4 GiB swap |
+| Sistem operasi | Ubuntu 22.04 (basis kernel `~22.04.1-Ubuntu`) |
+| Docker Engine | 29.0.1 (Community) |
+| Aplikasi | `gitlab/gitlab-ce:19.5.1-ce.0` (Omnibus, multi-arch) |
+| Komponen dalam container | NGINX, Puma, Sidekiq, PostgreSQL, Redis, Gitaly, GitLab Shell |
+| Reverse proxy | Traefik yang dikelola Coolify di host |
+| Terminasi TLS | Di reverse proxy, bukan di dalam container |
+| Domain | `gitlab.ilhem.eu.org` |
+| Port publik | TCP 443 (HTTPS), TCP 2222 (SSH Git) |
+| Port internal | container :80, dijangkau Traefik lewat jaringan Docker |
+| Persistensi | 3 volume Docker: `gitlab-config`, `gitlab-logs`, `gitlab-data` |
+
+Repositori ini menyediakan dua berkas Compose untuk dua jalur pemasangan yang
+keduanya sah, dan isi laporan ini berlaku untuk keduanya:
+
+| Berkas | Jalur | Persistensi | Akses HTTP |
+|---|---|---|---|
+| [`docker-compose.yml`](docker-compose.yml) | CLI `docker compose` murni, reverse proxy diurus sendiri | 3 bind mount di `./srv/gitlab` | bind `127.0.0.1:8929` |
+| [`compose.coolify.yaml`](compose.coolify.yaml) | **jalur yang dipakai pada instance aktif**, ditempel ke service Docker Compose di Coolify | 3 named volume | lewat jaringan Docker ke Traefik |
+
+```mermaid
+flowchart LR
+    U[Browser pengguna] -->|HTTPS 443| RP[Reverse proxy di host<br/>Caddy / Traefik]
+    RP -->|HTTP 127.0.0.1:8929| NG[NGINX internal :80]
+    G[Klien Git] -->|SSH 2222| GS[GitLab Shell]
+    NG --> PU[Puma / Rails]
+    NG --> SK[Sidekiq]
+    PU --> PG[(PostgreSQL)]
+    PU --> RD[(Redis)]
+    PU --> GY[Gitaly]
+    SK --> PG
+    SK --> RD
+    GS --> GY
+    GY --> VOL[/bind mount ./srv/gitlab/data/]
+    PG --> VOL
+    A[Administrator] -->|SSH| HOST[Host ARM64]
+
+    subgraph C[container gitlab/gitlab-ce:19.5.1-ce.0]
+        NG
+        PU
+        SK
+        PG
+        RD
+        GY
+        GS
+    end
+```
+
+Pada jalur CLI, port `8929` hanya di-bind ke `127.0.0.1`, sehingga tidak dapat
+dijangkau langsung dari internet; satu-satunya jalur HTTP dari luar adalah
+melalui reverse proxy yang memegang sertifikat. Pada jalur Coolify, port HTTP
+container tidak dipublikasikan ke host sama sekali karena Traefik berada di
+jaringan Docker yang sama. Port `2222` harus terbuka langsung pada kedua jalur
+karena protokol SSH tidak dapat dilewatkan reverse proxy HTTP. PostgreSQL dan
+Redis tidak dipublikasikan sama sekali, keduanya hanya diakses dari dalam
+container yang sama.
+
