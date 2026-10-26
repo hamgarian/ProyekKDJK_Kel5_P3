@@ -161,3 +161,51 @@ else
 	skip "bukan repo git, pemeriksaan rahasia dilewati"
 fi
 
+echo
+echo "== 5. Konsistensi klaim screenshot =="
+SHOT_COUNT=0
+if [ -d docs/screenshots ]; then
+	SHOT_COUNT=$(find docs/screenshots -type f \
+		\( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) |
+		wc -l | tr -d ' ')
+fi
+echo "  berkas gambar nyata di docs/screenshots: $SHOT_COUNT"
+# Cari embed gambar markdown ![...](...) di README.
+EMBEDS=$(grep -oE '!\[[^]]*\]\([^)]+\)' README.md 2>/dev/null | wc -l | tr -d ' ')
+echo "  embed gambar di README.md: $EMBEDS"
+if [ "$SHOT_COUNT" -eq 0 ] && [ "$EMBEDS" -gt 0 ]; then
+	bad "README menanamkan gambar padahal belum ada screenshot nyata"
+elif [ "$EMBEDS" -gt "$SHOT_COUNT" ]; then
+	bad "jumlah embed gambar ($EMBEDS) melebihi berkas yang ada ($SHOT_COUNT)"
+else
+	ok "klaim screenshot konsisten dengan berkas yang benar-benar ada"
+fi
+# Setiap embed harus menunjuk ke berkas yang ada.
+if [ "$EMBEDS" -gt 0 ]; then
+	MISSING=0
+	for p in $(grep -oE '!\[[^]]*\]\([^)]+\)' README.md | sed 's/.*(\(.*\))/\1/'); do
+		case "$p" in
+		http*) continue ;;
+		esac
+		[ -f "$p" ] || { bad "embed menunjuk berkas tidak ada: $p"; MISSING=1; }
+	done
+	[ "$MISSING" -eq 0 ] && ok "semua embed gambar menunjuk ke berkas nyata"
+fi
+
+echo
+echo "== 6. Gaya penulisan: tanpa em dash =="
+EMDASH_FILES=$(grep -rl $'\u2014' --include='*.md' --include='*.yml' --include='*.yaml' \
+	--include='*.sh' --include='*.example' . 2>/dev/null |
+	grep -v '^\./\.git/' | grep -v 'validate\.sh$')
+if [ -n "$EMDASH_FILES" ]; then
+	bad "ada em dash pada berkas:"
+	printf '%s\n' "$EMDASH_FILES" | sed 's/^/        /'
+else
+	ok "tidak ada em dash pada berkas dokumentasi dan konfigurasi"
+fi
+
+echo
+echo "-----------------------------------------"
+printf 'Ringkasan: %d OK, %d GAGAL, %d LEWAT\n' "$PASS" "$FAIL" "$SKIP"
+echo "-----------------------------------------"
+[ "$FAIL" -eq 0 ] || exit 1
