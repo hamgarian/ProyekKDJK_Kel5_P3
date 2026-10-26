@@ -45,3 +45,7 @@ services:
       retries: 10
       start_period: 15m
 
+volumes:
+  gitlab-config:
+  gitlab-logs:
+  gitlab-data:
