@@ -1281,3 +1281,29 @@ riwayat Git perlu ditulis ulang.
 
 ---
 
+## Pembahasan
+
+### Kelebihan GitLab CE
+
+1. **Satu paket, lengkap.** Omnibus menyatukan Rails, Puma, Sidekiq,
+   PostgreSQL, Redis, Gitaly, dan NGINX dalam satu image. Dibandingkan
+   merakit sendiri stack serupa, waktu setup jauh lebih singkat dan
+   kombinasi versi antarkomponen sudah diuji oleh vendor.
+2. **CI/CD kelas produksi tanpa biaya lisensi.** Pipeline, artifact,
+   environment, review app, dan container registry tersedia di edisi gratis.
+3. **Konfigurasi sebagai kode.** Seluruh perilaku instance ditentukan oleh
+   `gitlab.rb` yang - pada pola Compose ini - ikut ter-versi di repositori.
+   Instance dapat dibangun ulang dari nol secara deterministik.
+4. **Jalur ARM64 resmi.** Sejak tag `18.1.0-ce.0` image multi-arch tersedia,
+   sehingga server ARM (yang biasanya lebih murah per vCPU) bisa dipakai tanpa
+   emulasi QEMU. Dokumentasi juga menyatakan eksplisit "ARM-based processors
+   are supported".
+5. **Backup dan restore terdokumentasi dan bisa di-skrip.** Satu perintah
+   `gitlab-backup create` mencakup DB, repositori, upload, dan artifact.
+6. **Kedaulatan data penuh.** Tidak ada batas menit CI, jumlah kolaborator
+   privat, atau ukuran repositori selain kapasitas disk sendiri.
+7. **Panduan resmi untuk lingkungan terbatas.** Adanya halaman khusus
+   memory-constrained dengan angka penghematan terukur (100–400 MB dari Puma,
+   ~300 MB dari monitoring) menandakan skenario kecil memang didukung, bukan
+   sekadar ditoleransi.
+
