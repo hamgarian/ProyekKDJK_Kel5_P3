@@ -459,3 +459,80 @@ docker compose exec gitlab \
 > ganti lewat **Edit profile → Password**, lalu hapus berkas
 > `initial_root_password`.
 
+### B. Instalasi via Coolify
+
+[Coolify](https://coolify.io) adalah panel PaaS self-hosted yang membungkus
+Docker Compose dan Traefik, serta mengurus sertifikat TLS otomatis. Inilah
+jalur yang dipakai untuk instance `gitlab.ilhem.eu.org`.
+
+Satu hal yang perlu ditegaskan karena sering disalahpahami: service ini
+**bukan** deployment yang tertaut ke repositori GitHub. Tidak ada webhook,
+tidak ada build otomatis saat ada commit baru, dan Coolify tidak menarik
+berkas Compose dari GitHub. Yang dipakai adalah service **Docker Compose
+langsung**, yaitu definisi Compose yang ditempel ke dalam Coolify. Berkas
+[`compose.coolify.yaml`](compose.coolify.yaml) di repositori ini adalah salinan
+definisi tersebut, disimpan agar konfigurasi instance ikut ter-versi.
+
+1. **Siapkan DNS.** Buat record `A` (atau `AAAA`) untuk `gitlab.ilhem.eu.org`
+   yang menunjuk ke alamat IP publik server. Tanpa ini, Traefik tidak dapat
+   menyelesaikan tantangan penerbitan sertifikat.
+
+2. **Buat service baru di Coolify.** Dari dashboard: **+ New** →
+   **Docker Compose Empty**, lalu pilih server tujuan.
+
+3. **Tempel definisi Compose.** Isi editor Compose dengan isi
+   `compose.coolify.yaml`. Perhatikan tiga hal pada berkas itu:
+
+   - `image: gitlab/gitlab-ce:19.5.1-ce.0`, tag yang di-pin dan sudah
+     diverifikasi menyediakan `linux/arm64`;
+   - tidak ada publikasi port 80/443 ke host, karena Traefik milik Coolify yang
+     mengambil peran itu; hanya `2222:22` yang dipublikasikan untuk SSH Git;
+   - `mem_limit: 4g` sebagai pagar agar satu container tidak menghabiskan
+     memori host.
+
+4. **Isi variabel rahasia.** `compose.coolify.yaml` memakai
+   `SERVICE_PASSWORD_GITLABROOT`, yaitu pola variabel *magic* Coolify: panel
+   membangkitkan nilai acak dan menyuntikkannya saat deploy, sehingga password
+   root awal tidak pernah ditulis di repositori. Nilainya dilihat di tab
+   **Environment Variables** service tersebut.
+
+5. **Atur domain.** Pada tab **Domains** untuk service `gitlab`, isi
+   `https://gitlab.ilhem.eu.org` dan tetapkan port `80` sebagai port yang
+   di-proxy. Coolify menerbitkan sertifikat dan menyuntikkan label Traefik
+   secara otomatis, sehingga tidak ada label yang perlu ditulis manual.
+
+6. **Pastikan batas waktu health check cukup panjang.** Default Coolify terlalu
+   pendek untuk boot pertama GitLab; `compose.coolify.yaml` memakai
+   `start_period: 15m` agar container tidak dibunuh sebelum siap.
+
+7. **Deploy**, lalu pantau log sampai muncul `gitlab Reconfigured!`.
+
+8. **Verifikasi dari dalam container** lewat terminal Coolify:
+
+   ```sh
+   gitlab-ctl status          # seluruh service harus run:
+   ```
+
+9. **Ambil atau ganti password root.** Bila
+   `gitlab_rails['initial_root_password']` dipakai seperti pada berkas ini,
+   password berasal dari variabel Coolify, bukan dari
+   `/etc/gitlab/initial_root_password`. Gantilah lewat **Edit profile →
+   Password** setelah login pertama.
+
+**Hal yang perlu diperhatikan saat memakai Coolify:**
+
+- Coolify sudah menjalankan Traefik pada port 80/443 host, jadi definisi
+  Compose tidak boleh meminta kedua port itu. Pada jalur CLI, hal yang sama
+  dijaga dengan mem-bind HTTP hanya ke `127.0.0.1:8929`.
+- Port SSH `2222` perlu dibuka manual di firewall; Coolify tidak mengurus port
+  non-HTTP secara otomatis.
+- Jangan mengaktifkan terminasi TLS di dalam container selama proxy eksternal
+  dipakai. Nilai `letsencrypt['enable'] = false` dan
+  `nginx['listen_https'] = false` pada kedua berkas Compose harus dipertahankan.
+- Named volume Coolify (`gitlab-config`, `gitlab-logs`, `gitlab-data`) dikelola
+  Docker, bukan bind mount relatif. Untuk backup, isi `gitlab-config` tetap
+  harus disalin keluar secara terpisah, lihat
+  [Backup dan Restore](#backup-dan-restore).
+
+---
+
