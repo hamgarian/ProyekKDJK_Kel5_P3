@@ -819,3 +819,30 @@ tidak ada penyesuaian izin. Bila Docker dijalankan dalam mode *rootless* atau
 dengan user non-root, dokumentasi GitLab mewajibkan pemberian izin yang sesuai
 ke direktori volume lebih dulu.
 
+### Uji Coba Terpisah (tanpa mengganggu volume utama)
+
+Untuk mencoba tag image baru tanpa menyentuh data instance yang sudah berjalan,
+pakai nama container dan direktori volume terpisah:
+
+```sh
+mkdir -p /tmp/gitlab-smoke/{config,logs,data}
+docker run --rm -d --name gitlab-smoke \
+  --shm-size 256m \
+  -e GITLAB_OMNIBUS_CONFIG="external_url 'http://localhost:8929'; puma['worker_processes'] = 0; prometheus_monitoring['enable'] = false" \
+  -p 127.0.0.1:8929:80 \
+  -v /tmp/gitlab-smoke/config:/etc/gitlab \
+  -v /tmp/gitlab-smoke/logs:/var/log/gitlab \
+  -v /tmp/gitlab-smoke/data:/var/opt/gitlab \
+  gitlab/gitlab-ce:19.5.1-ce.0
+
+docker logs -f gitlab-smoke        # tunggu "gitlab Reconfigured!"
+docker exec gitlab-smoke gitlab-ctl status
+docker stop gitlab-smoke && rm -rf /tmp/gitlab-smoke
+```
+
+Uji ini menarik image ±3 GB dan menjalankan container kedua, jadi pastikan
+disk dan memori host masih lega sebelum menjalankannya berdampingan dengan
+instance utama.
+
+---
+
