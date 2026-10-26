@@ -62,3 +62,30 @@ services:
           'GITALY_COMMAND_SPAWN_MAX_PARALLEL' => '2'
         }
 
+        # --- Batas upload --------------------------------------------------
+        gitlab_rails['max_attachment_size'] = ${GITLAB_MAX_ATTACHMENT_MB:-50}
+        nginx['client_max_body_size'] = '${GITLAB_MAX_BODY_SIZE:-50m}'
+
+        # --- Backup --------------------------------------------------------
+        gitlab_rails['manage_backup_path'] = true
+        gitlab_rails['backup_path'] = '/var/opt/gitlab/backups'
+        gitlab_rails['backup_keep_time'] = ${GITLAB_BACKUP_KEEP_TIME:-604800}
+
+    ports:
+      # Hanya di-bind ke loopback: reverse proxy di host yang mengekspos ke publik.
+      - '127.0.0.1:${GITLAB_HTTP_PORT:-8929}:80'
+      # SSH untuk git clone harus dijangkau langsung dari internet.
+      - '${GITLAB_SSH_PORT:-2222}:22'
+
+    volumes:
+      - './srv/gitlab/config:/etc/gitlab'
+      - './srv/gitlab/logs:/var/log/gitlab'
+      - './srv/gitlab/data:/var/opt/gitlab'
+
+    # GitLab butuh waktu boot yang lama (first boot bisa >10 menit di ARM64 2 vCPU).
+    healthcheck:
+      test: ["CMD", "/opt/gitlab/bin/gitlab-healthcheck", "--fail", "--max-time", "10"]
+      interval: 60s
+      timeout: 30s
+      retries: 10
+      start_period: 15m
