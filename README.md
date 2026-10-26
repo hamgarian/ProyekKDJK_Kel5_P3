@@ -131,3 +131,45 @@ karena protokol SSH tidak dapat dilewatkan reverse proxy HTTP. PostgreSQL dan
 Redis tidak dipublikasikan sama sekali, keduanya hanya diakses dari dalam
 container yang sama.
 
+### Arsitektur Komponen di Dalam Container
+
+```
+                         Internet
+                            │
+                            │  HTTPS :443
+                            ▼
+              ┌──────────────────────────────┐
+              │  Reverse proxy (di host)     │  terminasi TLS,
+              │  Caddy / Traefik / Coolify   │  sertifikat Let's Encrypt
+              └──────────────┬───────────────┘
+                             │  HTTP 127.0.0.1:8929
+                             ▼
+      ┌──────────────────────────────────────────────┐
+      │        container  gitlab/gitlab-ce           │
+      │  ┌────────────────────────────────────────┐  │
+      │  │ NGINX (internal, :80)                  │  │
+      │  └──────┬──────────────────┬──────────────┘  │
+      │         ▼                  ▼                 │
+      │   ┌──────────┐      ┌─────────────┐          │
+      │   │  Puma    │      │  Sidekiq    │          │
+      │   │ (Rails)  │      │ (bg jobs)   │          │
+      │   └────┬─────┘      └──────┬──────┘          │
+      │        └─────────┬─────────┘                 │
+      │        ┌─────────┼───────────┬────────────┐  │
+      │        ▼         ▼           ▼            ▼  │
+      │  ┌──────────┐ ┌───────┐ ┌────────┐ ┌───────┐│
+      │  │PostgreSQL│ │ Redis │ │ Gitaly │ │GitLab ││
+      │  │          │ │       │ │        │ │ Shell ││
+      │  └──────────┘ └───────┘ └────────┘ └───┬───┘│
+      └───────────────────────────────────────┬─┴────┘
+                                              │ SSH :2222
+                                              ▼
+                                        git clone via SSH
+            volume bind-mount:
+              ./srv/gitlab/config  -> /etc/gitlab      (konfigurasi + secrets)
+              ./srv/gitlab/logs    -> /var/log/gitlab  (log)
+              ./srv/gitlab/data    -> /var/opt/gitlab  (DB, repo, upload, backup)
+```
+
+---
+
