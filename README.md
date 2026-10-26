@@ -33,6 +33,11 @@ Instance GitLab CE berjalan di host ARM64 dan dapat diakses publik lewat HTTPS:
 | Endpoint | <https://gitlab.ilhem.eu.org> menjawab `HTTP 200` dengan form login GitLab |
 | Status service di dalam container | `gitlab-ctl status` menampilkan 10 service berstatus `run:` |
 | Reverse proxy dan TLS | Traefik milik Coolify, sertifikat diterbitkan otomatis |
+| Container Compose yang berjalan | `gitlab-hdhjhzyiwqgmyagbtwqepae1`, berstatus `healthy` |
+| Integritas aplikasi | `gitlab-rake gitlab:check SANITIZE=true` keluar dengan status 0 tanpa kegagalan |
+| Git dan CI | clone serta push via HTTPS dan SSH port 2222 berhasil; pipeline berstatus `passed`/`success` |
+| Backup dan restore | backup `1793000747_2026_10_26_19.5.1` selesai; restore di container terisolasi memulihkan user, projek, dan ref Git yang identik |
+| Pemakaian memori | 2,735 GiB sampai 2,838 GiB dari `mem_limit` 4 GiB, **di atas** target hemat 2 GB |
 
 Rincian apa saja yang sudah diverifikasi langsung dan apa yang belum diuji
 tercatat di [docs/verifikasi.md](docs/verifikasi.md). Laporan ini tidak
@@ -1011,8 +1016,10 @@ pemeliharaan berikutnya.
 
 Instance sudah menyajikan halaman login di <https://gitlab.ilhem.eu.org>.
 Bagian ini adalah panduan pemakaian sesudah titik itu: fungsi apa yang tersedia
-dan urutan pengisian isi instance. Pengisian konten dan pengambilan screenshot
-merupakan langkah berikutnya yang belum tercatat hasilnya di laporan ini.
+dan urutan pengisian isi instance. Subset fungsi yang **sudah benar-benar
+dicoba** didaftar terpisah di [Demo Fungsi Dasar yang Sudah
+Dicoba](#demo-fungsi-dasar-yang-sudah-dicoba); sisanya tetap berupa panduan,
+bukan klaim hasil. Pengambilan screenshot belum dilakukan.
 
 ### Fungsi Utama yang Dipakai
 
@@ -1106,8 +1113,48 @@ curl -sS https://gitlab.ilhem.eu.org/-/readiness
 curl -sS https://gitlab.ilhem.eu.org/-/liveness
 ```
 
-Perintah pertama dan keempat sudah dijalankan pada instance ini dan hasilnya
-tercantum di [Ringkasan Hasil](#ringkasan-hasil).
+Keenam perintah di atas sudah dijalankan pada instance ini. Hasilnya tercantum
+di [Ringkasan Hasil](#ringkasan-hasil) dan baris 7, 9, 11, 14, serta 19 pada
+tabel [Pengujian](#pengujian). Khusus `/-/readiness` dan `/-/liveness`, dari
+internet jawabannya `HTTP 404` karena endpoint monitoring dibatasi ke localhost;
+jalankan dari dalam container bila ingin melihat isinya:
+
+```sh
+docker compose exec gitlab curl -sS "http://localhost/-/readiness?all=1"
+```
+
+### Demo Fungsi Dasar yang Sudah Dicoba
+
+Daftar ini **hanya** memuat fungsi yang dijalankan langsung pada instance
+tanggal 26 Oktober 2026. Fungsi lain pada tabel di atas belum dicoba dan tidak
+diklaim di sini.
+
+| Fungsi | Cara mencoba ulang | Bukti yang tercatat |
+|---|---|---|
+| Login root dan dashboard admin | login di `/users/sign_in`, lalu buka `/admin` | sesi root terbentuk, halaman `/admin` terbuka di peramban nyata |
+| Membuat user dan memakainya | login sebagai `kelompok5` | dipakai untuk seluruh operasi Git dan UI di bawah |
+| Projek dan repositori Git | buka projek, clone, commit, push | dua projek, keduanya dengan commit nyata |
+| Branch | `git switch -c fitur/penyemangat` lalu push | branch `fitur/penyemangat`, commit `f4c6566` |
+| Issue, label, milestone, komentar | tab `Issues` | issue #1 dengan label `peningkatan`, milestone `#1`, dan satu komentar |
+| Merge request | tab `Merge requests` | MR #1 di-merge, dan merge itu otomatis menutup issue #1 |
+| Pipeline CI/CD | tab `Build -> Pipelines` | pipeline #2, #3, #4 berstatus `success` |
+| Artefak job | tombol unduh artefak pada job | berkas `index.html` terunduh, 11.088 byte |
+
+Projek yang dipakai:
+
+1. **`kelompok5/demo-kdjk`** - projek pembuktian pipeline pertama. Commit
+   `34342ce`, pipeline #1 `passed`. Projek inilah yang ikut terbackup dan
+   dipulihkan pada latihan restore (baris 22 tabel Pengujian).
+2. **<https://gitlab.ilhem.eu.org/kelompok5/web-porto-rapit-sigma>** - projek
+   contoh berbahasa Indonesia yang dipakai untuk mendemokan siklus kerja penuh:
+   branch, issue, MR, merge, dan pipeline. Pipeline-nya menjalankan 32 test
+   pustaka standar; semuanya lulus. Hasil halamannya diperiksa manual di
+   peramban: klik kutipan pada JS berjalan, dan pada lebar 390 px tidak ada
+   overflow horizontal.
+
+Kedua projek berada di dalam instance, bukan di repositori GitHub ini. Akun
+`kelompok5` dipakai dengan password acak yang disimpan di luar repositori;
+password tidak ditulis di dokumen mana pun di sini.
 
 ### Screenshot
 
@@ -1139,25 +1186,53 @@ benar dijalankan; sisanya dibiarkan apa adanya daripada ditebak.
 | 7 | Status service | `gitlab-ctl status` | seluruh service `run:` | ✅ 10 service `run:` |
 | 8 | Sertifikat TLS | `openssl s_client -connect ...:443` | TLS tersambung tanpa peringatan | ✅ valid |
 | 9 | Halaman login | `curl -sSI .../users/sign_in` | `HTTP 200`, form login tampil | ✅ `HTTP 200` + form login |
-| 10 | Health check Compose | `docker compose ps` | status `healthy` | ⬜ belum diuji |
-| 11 | Readiness | `curl -sSI https://gitlab.ilhem.eu.org/-/readiness` | `HTTP/2 200` | ⬜ belum diuji |
-| 12 | Redirect HTTP ke HTTPS | `curl -sSI http://gitlab.ilhem.eu.org` | `301` ke `https://` | ⬜ belum diuji |
-| 13 | Login administratif | login root di peramban | masuk ke dashboard | ⬜ belum diuji |
-| 14 | Integritas aplikasi | `gitlab-rake gitlab:check SANITIZE=true` | tanpa kegagalan | ⬜ belum diuji |
-| 15 | Clone via HTTPS | `git clone https://gitlab.ilhem.eu.org/...` | berhasil | ⬜ belum diuji |
-| 16 | Clone via SSH | `ssh -T -p 2222 git@gitlab.ilhem.eu.org` | `Welcome to GitLab, @user!` | ⬜ belum diuji |
-| 17 | Push repositori | push dari klien | diterima tanpa ditolak proxy | ⬜ belum diuji |
-| 18 | Pipeline CI | jalankan `.gitlab-ci.yml` | pipeline berstatus `passed` | ⬜ belum diuji |
-| 19 | Pemakaian memori | `docker stats --no-stream gitlab` | sesuai target setelah tuning hemat memori | ⬜ belum diuji |
-| 20 | Persistensi | redeploy, lalu periksa data | data, user, dan repo tetap ada | ⬜ belum diuji |
-| 21 | Siklus backup | `gitlab-backup create` | `Creating backup archive: ... [DONE]` | ⬜ belum diuji |
-| 22 | Siklus restore | `gitlab-backup restore BACKUP=<id>` | data kembali utuh, `gitlab:check` lulus | ⬜ belum diuji |
+| 10 | Health check Compose | `docker compose ps` | status `healthy` | ✅ container `gitlab-hdhjhzyiwqgmyagbtwqepae1` berstatus `healthy` |
+| 11 | Readiness | `curl -sSI https://gitlab.ilhem.eu.org/-/readiness` | `HTTP/2 200` | ⚠️ lulus dari dalam container, `HTTP 404` dari publik (lihat catatan di bawah) |
+| 12 | Redirect HTTP ke HTTPS | `curl -sSI http://gitlab.ilhem.eu.org` | `301` ke `https://` | ⚠️ redirect terjadi, tetapi kodenya `307` dengan `Location: https://gitlab.ilhem.eu.org/`, bukan `301` |
+| 13 | Login administratif | login root di peramban | masuk ke dashboard | ✅ login root menghasilkan cookie sesi, lalu `/admin` terbuka di peramban nyata dengan judul dashboard admin |
+| 14 | Integritas aplikasi | `gitlab-rake gitlab:check SANITIZE=true` | tanpa kegagalan | ✅ keluar dengan status 0, tanpa kegagalan; integrasi yang dimatikan tercatat `skipped` |
+| 15 | Clone via HTTPS | `git clone https://gitlab.ilhem.eu.org/...` | berhasil | ✅ clone anonim berhasil |
+| 16 | Clone via SSH | `ssh -T -p 2222 git@gitlab.ilhem.eu.org` | `Welcome to GitLab, @user!` | ✅ `Welcome to GitLab, @kelompok5!`, lalu clone via SSH berhasil |
+| 17 | Push repositori | push dari klien | diterima tanpa ditolak proxy | ✅ push HTTPS terautentikasi (password) dan push via SSH port 2222 sebagai `kelompok5`, keduanya diterima |
+| 18 | Pipeline CI | jalankan `.gitlab-ci.yml` | pipeline berstatus `passed` | ✅ `demo-kdjk` pipeline #1 `passed`; `web-porto-rapit-sigma` pipeline #2, #3, #4 semuanya `success` |
+| 19 | Pemakaian memori | `docker stats --no-stream gitlab` | sesuai target setelah tuning hemat memori | ⚠️ 2,735 GiB saat idle dan 2,838 GiB pada pengukuran berikutnya dari `mem_limit` 4 GiB; target hemat 2 GB **tidak** tercapai |
+| 20 | Persistensi | redeploy, lalu periksa data | data, user, dan repo tetap ada | ⬜ belum tuntas: `docker compose up -d --force-recreate gitlab` selesai, tetapi container masih menjawab `HTTP 502` saat boot ulang, sehingga bukti ujung ke ujung belum ada |
+| 21 | Siklus backup | `gitlab-backup create` | `Creating backup archive: ... [DONE]` | ✅ `Backup 1793000747_2026_10_26_19.5.1 is done.`, keluar dengan status 0 |
+| 22 | Siklus restore | `gitlab-backup restore BACKUP=<id>` | data kembali utuh, `gitlab:check` lulus | ⚠️ restore selesai (`Restore task is done.`) dan data pulih; `gitlab:check` pasca-restore masih berjalan saat laporan ini ditulis |
 
 Baris 1 sampai 3 diulang otomatis oleh `scripts/validate.sh` tanpa menyentuh
-server. Baris 4 sampai 9 adalah pemeriksaan runtime yang sudah dilakukan pada
-instance aktif. Baris 10 ke bawah menuntut sesi login, klien Git, dan latihan
-restore; semuanya masih terbuka dan dicatat di
+server. Baris 4 sampai 22 adalah pemeriksaan runtime pada instance aktif
+tanggal 26 Oktober 2026. Rinciannya, termasuk berkas log sumber, ada di
 [docs/verifikasi.md](docs/verifikasi.md).
+
+**Catatan atas baris yang tidak hijau penuh:**
+
+- **Baris 11.** `GET http://localhost/-/readiness?all=1` dari dalam container
+  menjawab `HTTP 200` dengan `status: ok` dan seluruh pemeriksaan database,
+  Redis, serta Gitaly lulus. Permintaan yang sama dari internet menjawab
+  `HTTP 404` karena endpoint monitoring GitLab dibatasi oleh
+  `gitlab_rails['monitoring_whitelist']` ke localhost. Ini perilaku yang
+  diinginkan dan **tidak** dilonggarkan hanya agar tabel ini terlihat hijau.
+- **Baris 12.** Redirect ke HTTPS memang berjalan, tetapi Traefik mengirim
+  `307 Temporary Redirect`, bukan `301` seperti yang diharapkan kolom
+  sebelumnya. Hasil akhir bagi klien sama, kode statusnya berbeda.
+- **Baris 14.** `gitlab:check` dijalankan sebelum projek demo dibuat, sehingga
+  keluarannya memuat `Projects have namespace: ... can't check, you have no
+  projects` dan `Active users: ... 2`. Projek demo dibuat setelah pemeriksaan
+  itu.
+- **Baris 19.** Angka terukur jauh di atas target hemat memori 2 GB yang
+  disebut di bagian Konfigurasi. Target itu belum tercapai dan tidak diklaim
+  tercapai.
+- **Baris 22.** Restore dijalankan di container terpisah
+  `kdjk-gitlab-restore-test` dengan `--network none` dan versi image yang sama,
+  memakai salinan `gitlab-secrets.json` yang cocok. Hasilnya: user `root` dan
+  `kelompok5` aktif di basis data, projek `demo-kdjk` pulih, dan ref Git persis
+  `34342ce8019d3b903359e72cb811e5c58ddebac3`, sama dengan sumber backup. Log
+  restore memuat `ERROR: must be owner of extension pg_trgm`, `btree_gist`, dan
+  `amcheck`; pesan ini muncul karena extension sudah ada dan tidak dimiliki user
+  aplikasi, dan restore tetap selesai. Snapshot backup dibuat sebelum projek
+  portofolio ada, jadi ketiadaan projek itu di hasil restore bukan kehilangan
+  data.
 
 ---
 
