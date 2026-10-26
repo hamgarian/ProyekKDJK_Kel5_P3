@@ -1388,3 +1388,29 @@ bawah angka acuan, memahami mengapa `listen_https = false` justru diperlukan
 saat `external_url` berskema `https`, dan mengetahui bahwa backup tanpa
 `gitlab-secrets.json` adalah ilusi. Itu justru inti mata kuliah ini.
 
+### Catatan Metodologis
+
+Satu pelajaran proses dari penyusunan dokumen ini: dukungan ARM64 **diperiksa
+lebih dahulu**, bukan diasumsikan. Hasilnya nyata memengaruhi keputusan, sebab
+`18.0.0-ce.0` hanya amd64, dan andai tag itu dipilih begitu saja, dokumentasi
+akan terlihat benar namun gagal total saat dijalankan. Batas antara "artefak
+untuk arsitektur yang benar tersedia" dan "terbukti berjalan" juga dijaga tetap
+jelas sepanjang dokumen; keduanya kini terpenuhi, dan pemeriksaan yang belum
+dijalankan tetap ditulis sebagai belum dijalankan.
+
+---
+
+## Pembagian Kerja
+
+| Peran | Lingkup |
+|---|---|
+| **Penyusun dokumen dan konfigurasi** | Riset dokumentasi resmi, verifikasi arsitektur image, penulisan kedua berkas Compose, README, dan skrip validasi |
+| **Pengelola server** | Pekerjaan Coolify, DNS, firewall, penerbitan TLS, deploy service, dan verifikasi runtime |
+
+Keempat anggota memakai repositori ini sebagai satu sumber kebenaran: perubahan
+konfigurasi instance selalu ikut ter-commit di sini sebelum diterapkan di
+server, sehingga isi `compose.coolify.yaml` di repositori tetap mencerminkan
+definisi service yang berjalan.
+
+---
+
