@@ -173,3 +173,35 @@ container yang sama.
 
 ---
 
+## Prasyarat
+
+### Perangkat Lunak
+
+| Komponen | Versi minimum | Catatan |
+|---|---|---|
+| Linux (Debian/RHEL-based) | - | Docker for Windows **tidak didukung resmi** oleh GitLab |
+| Docker Engine | 20.10+ | Pada host target terpasang **29.0.1** |
+| Docker Compose | v2 (plugin `docker compose`) | - |
+| Reverse proxy | - | Caddy, Traefik, NGINX, atau Coolify |
+| MTA (Postfix/Sendmail) | - | **Tidak disertakan** dalam image GitLab; email keluar perlu SMTP eksternal |
+
+### Perangkat Keras
+
+Angka resmi dari dokumentasi GitLab:
+
+| Sumber | CPU | RAM | Storage |
+|---|---|---|---|
+| [Baseline single-node](https://docs.gitlab.com/install/requirements/) | 8 vCPU | 16 GB | 40 GB (node aplikasi) |
+| [Lingkungan terbatas memori](https://docs.gitlab.com/omnibus/settings/memory_constrained_envs/) | 4 core ARM7/ARM64 **atau** 1 core AMD64 | min. 2 GB + 1 GB swap (optimal 2,5 GB + 1 GB) | 20 GB |
+
+Kutipan verbatim dari halaman requirements:
+
+> For a single-node installation, 8 vCPU is the baseline. **ARM-based processors are supported.**
+
+> For single-node installations in memory-constrained environments, GitLab can run with at least 8 GB of memory.
+
+Catatan: halaman requirements menyebut 8 GB sebagai batas bawah
+memory-constrained, sedangkan halaman khusus memory-constrained menyebut 2–2,5
+GB untuk skenario ≤5 pengembang dengan repositori <100 MB. Projek ini memakai
+angka dari halaman khusus tersebut karena skala pemakaiannya sesuai.
+
