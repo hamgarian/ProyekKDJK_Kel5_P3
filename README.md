@@ -1072,3 +1072,26 @@ Contoh: "Verifikasi DNS gitlab.ilhem.eu.org", "Uji restore dari backup",
 
 **5. Wiki** berisi catatan operasional: prosedur backup, kontak, troubleshooting.
 
+### Langkah Pengisian Setelah Instance Hidup
+
+```sh
+# 1. Buka https://gitlab.ilhem.eu.org, login sebagai root.
+#    Jalur CLI: password ada di /etc/gitlab/initial_root_password.
+#    Jalur Coolify: password berasal dari SERVICE_PASSWORD_GITLABROOT.
+# 2. Ganti password root, lalu hapus berkas tersebut bila ada:
+docker compose exec gitlab rm -f /etc/gitlab/initial_root_password
+
+# 3. Matikan pendaftaran terbuka:
+#    Admin -> Settings -> General -> Sign-up restrictions
+#    -> hapus centang "Sign-up enabled" -> Save
+
+# 4. Buat grup dan 4 akun anggota lewat Admin -> Users -> New user
+
+# 5. Uji push via SSH dari klien
+ssh-keygen -t ed25519 -C "nim@kdjk"            # lalu tambahkan .pub di Profile -> SSH Keys
+git clone ssh://git@gitlab.ilhem.eu.org:2222/kdjk-p3-kelompok5/laporan-kdjk.git
+
+# 6. Nonaktifkan Prometheus Metrics di aplikasi
+#    Admin -> Settings -> Metrics and profiling -> Metrics - Prometheus
+```
+
