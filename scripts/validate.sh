@@ -125,3 +125,39 @@ else
 	done
 	IFS=$old_ifs
 
+	# Keempat anggota kelompok harus tercantum lengkap dengan NIM.
+	for nim in M0403241083 M0403241084 M0403241086 M0403241087; do
+		if grep -q "$nim" README.md; then
+			ok "anggota $nim tercantum"
+		else
+			bad "anggota $nim TIDAK tercantum"
+		fi
+	done
+fi
+
+echo
+echo "== 4. Tidak ada rahasia ter-commit =="
+if git rev-parse --git-dir >/dev/null 2>&1; then
+	TRACKED=$(git ls-files)
+	if printf '%s\n' "$TRACKED" | grep -qxE '\.env|.*/\.env'; then
+		bad ".env ikut ter-track git"
+	else
+		ok ".env tidak ter-track git"
+	fi
+	if printf '%s\n' "$TRACKED" | grep -qE '\.(pem|key)$|gitlab-secrets\.json'; then
+		bad "ada file kunci/secret ter-track git"
+	else
+		ok "tidak ada file kunci/secret ter-track"
+	fi
+	# Password literal di file yang ter-track.
+	if printf '%s\n' "$TRACKED" | grep -vE '^scripts/validate\.sh$' | tr '\n' '\0' |
+		xargs -0 -r grep -lniE '(password|secret|token)[[:space:]]*[:=][[:space:]]*["'"'"']?[A-Za-z0-9!@#$%^&*_-]{10,}' 2>/dev/null |
+		grep -q .; then
+		bad "ada dugaan kredensial literal di file ter-track"
+	else
+		ok "tidak ada dugaan kredensial literal"
+	fi
+else
+	skip "bukan repo git, pemeriksaan rahasia dilewati"
+fi
+
