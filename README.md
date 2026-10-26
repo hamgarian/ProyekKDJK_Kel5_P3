@@ -1476,3 +1476,28 @@ berikut, diakses **26 Oktober 2026**.
 9. **GitLab Community Edition tags (Docker Hub)** - daftar tag resmi.
    <https://hub.docker.com/r/gitlab/gitlab-ce/tags>
 
+### Sumber Verifikasi Arsitektur
+
+10. **Docker Registry HTTP API V2 - Manifests** - endpoint manifest yang
+    dipakai untuk memeriksa arsitektur tiap tag.
+    <https://distribution.github.io/distribution/spec/api/>
+11. **OCI Image Index Specification** - struktur manifest multi-arch.
+    <https://github.com/opencontainers/image-spec/blob/main/image-index.md>
+12. Pemeriksaan langsung ke `registry-1.docker.io` pada 26 Oktober 2026;
+    hasil lengkap per tag ada di tabel
+    [Arsitektur Host dan Kompatibilitas Image](#arsitektur-host-dan-kompatibilitas-image),
+    dapat diulang dengan `./scripts/validate.sh`.
+
+### Reverse Proxy dan TLS
+
+13. **Caddy - `reverse_proxy` directive**.
+    <https://caddyserver.com/docs/caddyfile/directives/reverse_proxy>
+14. **Caddy - Automatic HTTPS**.
+    <https://caddyserver.com/docs/automatic-https>
+15. **NGINX - `ngx_http_proxy_module`**.
+    <https://nginx.org/en/docs/http/ngx_http_proxy_module.html>
+16. **Traefik - Docker provider & routers**.
+    <https://doc.traefik.io/traefik/providers/docker/>
+17. **Let's Encrypt - Challenge Types**.
+    <https://letsencrypt.org/docs/challenge-types/>
+
