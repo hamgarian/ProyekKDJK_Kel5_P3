@@ -740,3 +740,26 @@ Dengan `puma['worker_processes'] = 0`, hanya ada **satu** proses Puma. Request
 HTTP diproses dengan konkurensi rendah; cocok untuk ≤5 pengembang, tidak cocok
 untuk banyak pengguna bersamaan.
 
+### Konfigurasi Batas Upload
+
+```ruby
+gitlab_rails['max_attachment_size'] = 50    # MB, batas lampiran di aplikasi
+nginx['client_max_body_size'] = '50m'       # batas di NGINX internal
+```
+
+Keduanya harus dinaikkan bersamaan - dan reverse proxy di host juga tidak
+boleh membatasi (`client_max_body_size 0` pada NGINX, `max_size 0` pada Caddy),
+jika tidak, upload besar akan gagal di lapisan proxy sebelum sampai ke GitLab.
+
+### `shm_size`
+
+```yaml
+shm_size: '256m'
+```
+
+Nilai ini diambil dari contoh resmi `docker-compose.yml` di dokumentasi GitLab.
+Default `/dev/shm` Docker hanya 64 MB dan tidak cukup untuk PostgreSQL bawaan
+GitLab.
+
+---
+
